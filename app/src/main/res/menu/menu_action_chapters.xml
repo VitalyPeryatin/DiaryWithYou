@@ -2,6 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/menu_remove"
           android:title="Delete"
-          android:icon="@mipmap/ic_launcher"
+          android:icon="@drawable/ic_delete"
           app:showAsAction="always"/>
 </menu>

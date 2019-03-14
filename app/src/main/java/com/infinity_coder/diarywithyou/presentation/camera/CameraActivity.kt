@@ -45,7 +45,7 @@ class CameraActivity: AppCompatActivity(){
             }
         })
 
-        btnCamera.setOnClickListener {
+        fabCamera.setOnClickListener {
             capturePicture()
         }
     }

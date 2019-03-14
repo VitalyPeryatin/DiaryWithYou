@@ -1,9 +1,14 @@
-package com.infinity_coder.diarywithyou.presentation.main
+package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
 import android.view.*
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
@@ -11,21 +16,32 @@ import com.infinity_coder.diarywithyou.domain.DiaryChapter
 import kotlinx.android.synthetic.main.item_cover.view.*
 import kotlinx.coroutines.*
 
-class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
+class CoverRecyclerAdapter(
+    private val lifecycleOwner: LifecycleOwner,
+    val onItemClickListener: OnItemClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
-    var items = mutableListOf<DiaryChapter>()
-    private var filterItems = mutableListOf<DiaryChapter>()
+    private var items = listOf<DiaryChapter>()
+
+    var oldFilteredItems = listOf<DiaryChapter>()
+    var filteredItems = MutableLiveData<List<DiaryChapter>>()
+    private set
     var viewWithActionBar: AppCompatActivity? = null
     val diaryDao = App.instance.db.diaryDao()
+    var selectedChapter: DiaryChapter? = null
+
     init {
-        GlobalScope.launch(Dispatchers.IO) {
-            items = diaryDao.getAll() as MutableList<DiaryChapter>
-            filterItems.addAll(items)
-            withContext(Dispatchers.Main){
-                notifyDataSetChanged()
-            }
-        }
+        diaryDao.getAllChapters().observe(lifecycleOwner, Observer<List<DiaryChapter>> { newItems ->
+            items = newItems.reversed()
+            filteredItems.postValue(items)
+        })
+
+        filteredItems.observe(lifecycleOwner, Observer<List<DiaryChapter>> { newItems ->
+            val coverDiffUtilCallback = CoverDiffUtilCallback(oldFilteredItems, newItems)
+            val diffResult = DiffUtil.calculateDiff(coverDiffUtilCallback)
+            oldFilteredItems = newItems
+            diffResult.dispatchUpdatesTo(this)
+        })
     }
 
     interface OnItemClickListener{
@@ -34,12 +50,7 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
 
     fun addChapter(diaryChapter: DiaryChapter){
         GlobalScope.launch(Dispatchers.IO) {
-            diaryDao.insert(diaryChapter)
-            items.add(diaryChapter)
-            filterItems.add(diaryChapter)
-            withContext(Dispatchers.Main){
-                this@CoverRecyclerAdapter.notifyDataSetChanged()
-            }
+            diaryDao.insertChapter(diaryChapter)
         }
     }
 
@@ -49,8 +60,17 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
             when(item?.itemId){
                 R.id.menu_remove -> {
-                    Toast.makeText(App.instance.baseContext, "ОК", Toast.LENGTH_SHORT).show()
-                    mode?.finish()
+                    GlobalScope.launch {
+                        diaryDao.delete(selectedChapter!!)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                App.instance.baseContext,
+                                "Глава \"${selectedChapter!!.name}\" удалена",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            mode?.finish()
+                        }
+                    }
                 }
                 else -> return false
             }
@@ -69,18 +89,15 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
 
         override fun onDestroyActionMode(mode: ActionMode?) {
             currentActionMode = null
+            selectedChapter = null
         }
 
     }
 
     fun filter(text: String){
-        filterItems.clear()
-        for(item in items){
-            if(text in item.name){
-                filterItems.add(item)
-            }
-        }
-        notifyDataSetChanged()
+        filteredItems.postValue(items.filter {
+                s -> text.toLowerCase() in s.name.toLowerCase()
+        })
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoverViewHolder {
@@ -88,10 +105,18 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
         return CoverViewHolder(view)
     }
 
-    override fun getItemCount(): Int = filterItems.size
+    override fun getItemCount(): Int = filteredItems.value?.size ?: 0
 
     override fun onBindViewHolder(holder: CoverViewHolder, position: Int) {
-        holder.tvName.text = filterItems[position].name
+        filteredItems.value?.let { items ->
+            holder.tvName.text = items[position].name
+            holder.ivInfo.setOnClickListener {
+                Toast.makeText(App.instance.baseContext, "Информация о главе", Toast.LENGTH_SHORT).show()
+            }
+            holder.ivShare.setOnClickListener {
+                Toast.makeText(App.instance.baseContext, "Поделиться с пользователями", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun addViewWithActionBar(view: AppCompatActivity?){
@@ -110,6 +135,7 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
             view.setOnLongClickListener {
                 if (currentActionMode != null) { return@setOnLongClickListener false }
                     viewWithActionBar?.let {
+                        selectedChapter = filteredItems.value!![layoutPosition]
                         it.startSupportActionMode(modeCallback)
                         view.isSelected = true
                     }
@@ -117,5 +143,7 @@ class CoverRecyclerAdapter(val onItemClickListener: OnItemClickListener):
             }
         }
         val tvName = view.tvName!!
+        val ivShare = view.ivShare
+        val ivInfo = view.ivInfo
     }
 }

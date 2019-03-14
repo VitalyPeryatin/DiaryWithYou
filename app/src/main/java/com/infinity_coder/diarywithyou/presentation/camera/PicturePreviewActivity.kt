@@ -30,9 +30,7 @@ class PicturePreviewActivity : Activity() {
     }
 
     companion object {
-
         private var image: PictureResult? = null
-
         fun setPictureResult(im: PictureResult?) {
             image = im
         }

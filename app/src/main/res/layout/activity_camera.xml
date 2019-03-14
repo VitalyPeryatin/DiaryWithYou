@@ -20,12 +20,14 @@
             app:cameraGesturePinch="zoom"
             app:cameraGestureScrollHorizontal="exposureCorrection"
             app:cameraGestureScrollVertical="none"
-            app:cameraMode="picture"/>
-    <ImageButton
+            app:cameraMode="picture">
+    </com.otaliastudios.cameraview.CameraView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" app:srcCompat="@android:drawable/ic_menu_camera"
-            android:id="@+id/btnCamera"
-            app:layout_constraintStart_toStartOf="parent" android:layout_marginStart="8dp"
-            app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp" android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent"/>
+            android:layout_height="wrap_content"
+            android:clickable="true" android:id="@+id/fabCamera"
+            android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="parent"
+            android:layout_marginEnd="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginStart="8dp"
+            app:layout_constraintStart_toStartOf="parent" app:backgroundTint="@color/colorPrimary"
+            app:srcCompat="@drawable/ic_camera_white"/>
 </androidx.constraintlayout.widget.ConstraintLayout>

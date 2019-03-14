@@ -1,31 +1,37 @@
-package com.infinity_coder.diarywithyou.presentation.main
+package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
 
+import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
+import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.app.ActivityCompat.invalidateOptionsMenu
 import androidx.fragment.app.Fragment
-import com.infinity_coder.diarywithyou.App
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
 import com.infinity_coder.diarywithyou.presentation.camera.CameraActivity
+import com.infinity_coder.diarywithyou.presentation.main.MainActivity
+import com.infinity_coder.diarywithyou.presentation.main.Searchable
 import com.itextpdf.text.*
 import com.itextpdf.text.pdf.*
 import kotlinx.android.synthetic.main.fragment_diary.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
-import javax.xml.transform.Result
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.core.content.FileProvider
+import kotlinx.android.synthetic.main.fragment_diary_recycler.*
+import kotlinx.coroutines.*
 
-class DiaryFragment: Fragment() {
-
-    lateinit var diaryChapter: DiaryChapter
+class DiaryFragment: Fragment(), Searchable {
+    var chapterName: String? = null
+    lateinit var adapter: PagesRecyclerAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_diary, container, false)
@@ -33,24 +39,99 @@ class DiaryFragment: Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val chapterName = arguments?.getString("chapter")
+        chapterName = arguments?.getString("chapter")
 
-        val diaryDao = App.instance.db.diaryDao()
-        GlobalScope.launch(Dispatchers.IO) {
-            diaryChapter = diaryDao.getByName(chapterName!!)
+        adapter = PagesRecyclerAdapter(this, chapterName)
+            LinearLayoutManager(context)
+        val layoutManager = LinearLayoutManager(context)
+        layoutManager.reverseLayout = true
+        layoutManager.stackFromEnd = true
+        recyclerPages.layoutManager = layoutManager
+        recyclerPages.adapter = adapter
 
-            pdfView.fromFile(File(diaryChapter.pdfPath)).load()
-        }
+//        GlobalScope.launch(Dispatchers.IO) {
+//            chapterName = diaryDao.getByName(chapterName!!)
+//
+//            pdfView.fromFile(File(chapterName.pdfPath)).load()
+//        }
         fabCamera.setOnClickListener {
+            (activity as MainActivity).closeSearchView()
             startActivityForResult(Intent(context, CameraActivity::class.java), 1)
         }
     }
 
+    fun createPdf(){
+        val document = Document()
+        val pdfPath = "${Environment.getExternalStorageDirectory().absoluteFile}/${UUID.randomUUID()}.pdf"
+        PdfWriter.getInstance(document, FileOutputStream(pdfPath))
+        val pages = adapter.getPages()
+        GlobalScope.launch(Dispatchers.IO) {
+            document.open()
+
+            val font1 = Font(
+                Font.FontFamily.HELVETICA,
+                16F, Font.BOLD
+            )
+
+            for(page in pages) {
+                document.newPage()
+                val title = Paragraph(page.date, font1)
+                title.alignment = Element.ALIGN_CENTER
+                title.spacingAfter = 16F
+                document.add(title)
+
+                val image = Image.getInstance(page.imagePath)
+                document.add(image)
+            }
+            document.close()
+
+            val intent = Intent(Intent.ACTION_VIEW)
+
+            val apkURI = FileProvider.getUriForFile(context!!,
+                context?.applicationContext?.packageName + ".provider", File(pdfPath))
+            intent.setDataAndType(apkURI, "application/pdf")
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            try{
+                startActivity(intent)
+            } catch(e: ActivityNotFoundException) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        (activity as MainActivity).optionsMenu.postValue(MainActivity.MenuType.PAGES)
+        (activity as MainActivity).activeFragment = this
+    }
+
+    override fun onPause() {
+        super.onPause()
+        (activity as MainActivity).activeFragment = null
+    }
+
+    @SuppressLint("SimpleDateFormat")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if(requestCode == 1 && resultCode == RESULT_OK){
-            addImageToPdf(data?.getStringExtra("imagePath")!!, diaryChapter.name)
+            val imagePath = data?.getStringExtra("imagePath")!!
+            val date = SimpleDateFormat("dd.MM.yyyy").format(Date())
+            adapter.addPage(chapterName!!, imagePath, date)
+            GlobalScope.launch {
+                delay(800)
+                recyclerPages.smoothScrollToPosition(adapter.itemCount-1)
+            }
         }
+    }
+
+    override fun search(text: String) {
+        adapter.filter(text)
     }
 
     fun addImageToPdf(imagePath: String, pdfName: String){

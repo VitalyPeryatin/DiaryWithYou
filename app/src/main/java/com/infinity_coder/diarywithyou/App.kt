@@ -9,7 +9,9 @@ class App: Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
-        db = Room.databaseBuilder(this, DiaryDatabase::class.java, "DiaryDB").build()
+        db = Room.databaseBuilder(this, DiaryDatabase::class.java, "DiaryDB")
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     companion object {

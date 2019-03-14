@@ -1,7 +1,10 @@
 package com.infinity_coder.diarywithyou.presentation.main
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -15,7 +18,12 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import com.infinity_coder.diarywithyou.R
+import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.DiaryFragment
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerAdapter
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.DiaryRecyclerFragment
 import com.itextpdf.text.*
 import com.itextpdf.text.pdf.PdfReader
 import com.itextpdf.text.pdf.PdfWriter
@@ -27,6 +35,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.io.FileOutputStream
 import java.net.URL
+import java.util.*
 
 
 class MainActivity : AppCompatActivity(),
@@ -34,8 +43,12 @@ class MainActivity : AppCompatActivity(),
 
     val EXTERNAL_STORAGE_PERMISSION_CODE = 1
     lateinit var diaryRecyclerFragment: DiaryRecyclerFragment
-    lateinit var activeFragment: Fragment
+    var activeFragment: Fragment? = null
+    lateinit var searchView: SearchView
 
+    enum class MenuType{CHAPTERS, PAGES}
+
+    val optionsMenu = MutableLiveData<MenuType>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,49 +57,44 @@ class MainActivity : AppCompatActivity(),
 
         diaryRecyclerFragment =
             DiaryRecyclerFragment.newInstance(this)
-        activeFragment = diaryRecyclerFragment
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_place, activeFragment)
+            .replace(R.id.fragment_place, diaryRecyclerFragment)
             .commit()
+        optionsMenu.observe(this, Observer<MenuType>{
+            invalidateOptionsMenu()
+        })
     }
 
     override fun onItemClick(text: String) {
-        activeFragment = DiaryFragment.newInstance(text)
-        diaryRecyclerFragment.hideFab()
         supportFragmentManager.beginTransaction()
             .replace(
                 R.id.fragment_place,
-                activeFragment
+                DiaryFragment.newInstance(text)
             )
             .addToBackStack(null)
             .commit()
+        closeSearchView()
     }
 
-    lateinit var searchView: SearchView
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_app_bar, menu)
+        if(optionsMenu.value == MenuType.CHAPTERS) {
+            menuInflater.inflate(R.menu.menu_app_bar_chapters, menu)
+        }
+        else if(optionsMenu.value == MenuType.PAGES){
+            menuInflater.inflate(R.menu.menu_app_bar_pages, menu)
+        }
         searchView = menu?.findItem(R.id.app_bar_search)?.actionView as SearchView
         searchView.queryHint = "Search"
-        searchView.addOnAttachStateChangeListener(object : OnAttachStateChangeListener {
 
-            override fun onViewDetachedFromWindow(arg0: View) {
-                diaryRecyclerFragment.showFab()
-            }
-
-            override fun onViewAttachedToWindow(arg0: View) {
-                diaryRecyclerFragment.hideFab()
-            }
-        })
-        searchView.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 Toast.makeText(this@MainActivity, "Готово: $query", Toast.LENGTH_SHORT).show()
                 return false
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                newText?.let{
-                    if(activeFragment is Searchable){
+                newText?.let {
+                    if (activeFragment is Searchable) {
                         (activeFragment as Searchable).search(newText)
                     }
                 }
@@ -98,8 +106,10 @@ class MainActivity : AppCompatActivity(),
 
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when(item?.itemId){
-            R.id.app_bar_search -> {
-
+            R.id.app_bar_pdf -> {
+                if(activeFragment is DiaryFragment){
+                    (activeFragment as DiaryFragment).createPdf()
+                }
             }
         }
         return true
@@ -127,38 +137,14 @@ class MainActivity : AppCompatActivity(),
         }
     }
 
+    fun closeSearchView(){
+        toolbar.collapseActionView()
+    }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE) {
             //if (grantResults.isNotEmpty() && grantResults[0] == PERMISSION_GRANTED && grantResults[1] == PERMISSION_GRANTED)
                 // createPdf()
-        }
-    }
-
-    fun createPdf(){
-        val document = Document()
-        PdfWriter.getInstance(document, FileOutputStream("${Environment.getExternalStorageDirectory().absoluteFile}/template3.pdf"))
-        GlobalScope.launch(Dispatchers.IO) {
-            document.open()
-            val font1 = Font(
-                Font.FontFamily.HELVETICA,
-                16F, Font.BOLD
-            )
-            val title = Paragraph("Receipt", font1)
-            title.alignment = Element.ALIGN_CENTER
-            title.spacingAfter = 16F
-            document.add(title)
-            val imageUrl = "http://www.javenue.info/files/sample.png"
-            val stamp = Image.getInstance(URL(imageUrl))
-            document.add(stamp)
-            document.close()
-
-            val reader = PdfReader("${Environment.getExternalStorageDirectory().absoluteFile}/template3.pdf")
-            val strategy = SimpleTextExtractionStrategy()
-            for(page in 1..reader.numberOfPages){
-                val text = PdfTextExtractor.getTextFromPage(reader, page, strategy)
-                Log.d("myLog", text)
-            }
-            reader.close()
         }
     }
 }

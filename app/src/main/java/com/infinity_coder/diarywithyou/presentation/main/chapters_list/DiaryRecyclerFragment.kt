@@ -1,24 +1,28 @@
-package com.infinity_coder.diarywithyou.presentation.main
+package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
 import android.os.Bundle
 import android.os.Environment
 import android.view.*
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.ActionMode
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.GridLayoutManager
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.domain.DiaryChapter
+import com.infinity_coder.diarywithyou.presentation.main.MainActivity
+import com.infinity_coder.diarywithyou.presentation.main.Searchable
 import com.itextpdf.text.Document
-import com.itextpdf.text.Element
 import com.itextpdf.text.Paragraph
 import com.itextpdf.text.pdf.PdfWriter
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_diary_recycler.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.FileOutputStream
-import kotlin.random.Random
 
-class DiaryRecyclerFragment: Fragment(), ChapterNameDialog.OnChapterNameDialogListener,
+class DiaryRecyclerFragment: Fragment(),
+    ChapterNameDialog.OnChapterNameDialogListener,
     CoverRecyclerAdapter.OnItemClickListener, View.OnClickListener,
     Searchable {
 
@@ -32,7 +36,7 @@ class DiaryRecyclerFragment: Fragment(), ChapterNameDialog.OnChapterNameDialogLi
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapter = CoverRecyclerAdapter(this)
+        adapter = CoverRecyclerAdapter(this, this)
         chapterNameDialog = ChapterNameDialog()
 
         recyclerCover.layoutManager = GridLayoutManager(context, 2)
@@ -44,6 +48,7 @@ class DiaryRecyclerFragment: Fragment(), ChapterNameDialog.OnChapterNameDialogLi
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         adapter.addViewWithActionBar(activity as AppCompatActivity)
+        (activity as MainActivity).activeFragment = this
     }
 
     override fun onDestroy() {
@@ -51,32 +56,32 @@ class DiaryRecyclerFragment: Fragment(), ChapterNameDialog.OnChapterNameDialogLi
         adapter.removeViewWithActionBar()
     }
 
+    override fun onStart() {
+        super.onStart()
+        (activity as MainActivity).optionsMenu.postValue(MainActivity.MenuType.CHAPTERS)
+        (activity as MainActivity).activeFragment = this
+    }
+
+    override fun onPause() {
+        super.onPause()
+        (activity as MainActivity).activeFragment = null
+    }
+
     override fun onClick(v: View?) {
         when(v?.id){
             R.id.fabRecycler -> {
                 chapterNameDialog.show(childFragmentManager, "dialog")
-//                val name = "Текст ${Random(100)}"
-//                val diaryChapter = DiaryChapter(name, "${Environment.getExternalStorageDirectory().absoluteFile}/$name.pdf", null)
-//                adapter.addChapter(diaryChapter)
+                (activity as MainActivity).closeSearchView()
             }
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        showFab()
-    }
-
-    fun hideFab(){
-        fabRecycler.hide()
-    }
-
-    fun showFab(){
-        fabRecycler.show()
-    }
-
     override fun addChapter(chapter: DiaryChapter) {
         adapter.addChapter(chapter)
+        GlobalScope.launch {
+            delay(800)
+            recyclerCover.smoothScrollToPosition(0)
+        }
         createPdf(chapter)
     }
 

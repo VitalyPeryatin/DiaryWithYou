@@ -1,21 +1,17 @@
-package com.infinity_coder.diarywithyou.presentation.main
+package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
-import android.app.AlertDialog
-import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
 import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.widget.ListPopupWindow.MATCH_PARENT
 import androidx.appcompat.widget.ListPopupWindow.WRAP_CONTENT
 import androidx.fragment.app.DialogFragment
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.domain.DiaryChapter
-import kotlinx.android.synthetic.main.dialog_chapter_name.etChapterName
 import kotlinx.android.synthetic.main.dialog_chapter_name.view.*
 
 
@@ -33,6 +29,7 @@ class ChapterNameDialog: DialogFragment() {
             val diaryChapter =
                 DiaryChapter(name, "${Environment.getExternalStorageDirectory().absoluteFile}/$name.pdf", null)
             chapterListener.addChapter(diaryChapter)
+            dismiss()
         }
     }
 
@@ -55,12 +52,13 @@ class ChapterNameDialog: DialogFragment() {
         dialog!!.window!!.setLayout(MATCH_PARENT, WRAP_CONTENT)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-    }
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         chapterListener = (parentFragment as OnChapterNameDialogListener)
+    }
+
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        etChapterName.setText("")
     }
 }
