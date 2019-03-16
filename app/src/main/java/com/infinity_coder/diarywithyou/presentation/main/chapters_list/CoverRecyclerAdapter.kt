@@ -5,7 +5,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
@@ -13,22 +12,26 @@ import androidx.recyclerview.widget.RecyclerView
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.domain.DiaryChapter
+import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_cover.view.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
-class CoverRecyclerAdapter(
-    private val lifecycleOwner: LifecycleOwner,
-    val onItemClickListener: OnItemClickListener):
+
+class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListener: OnItemClickListener,
+                           val onItemActionsClickListener: OnItemActionsClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
     private var items = listOf<DiaryChapter>()
 
-    var oldFilteredItems = listOf<DiaryChapter>()
-    var filteredItems = MutableLiveData<List<DiaryChapter>>()
-    private set
-    var viewWithActionBar: AppCompatActivity? = null
-    val diaryDao = App.instance.db.diaryDao()
-    var selectedChapter: DiaryChapter? = null
+    private var oldFilteredItems = listOf<DiaryChapter>()
+    private var filteredItems = MutableLiveData<List<DiaryChapter>>()
+    private var viewWithActionBar: AppCompatActivity? = null
+    private val diaryDao = App.instance.db.diaryDao()
+    private var selectedChapter: DiaryChapter? = null
 
     init {
         diaryDao.getAllChapters().observe(lifecycleOwner, Observer<List<DiaryChapter>> { newItems ->
@@ -44,8 +47,17 @@ class CoverRecyclerAdapter(
         })
     }
 
+    fun getData(): List<DiaryChapter>{
+        return oldFilteredItems
+    }
+
     interface OnItemClickListener{
         fun onItemClick(text: String)
+    }
+
+    interface OnItemActionsClickListener{
+        fun onShareClick()
+        fun onInfoClick()
     }
 
     fun addChapter(diaryChapter: DiaryChapter){
@@ -61,13 +73,16 @@ class CoverRecyclerAdapter(
             when(item?.itemId){
                 R.id.menu_remove -> {
                     GlobalScope.launch {
-                        diaryDao.delete(selectedChapter!!)
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                App.instance.baseContext,
+                        selectedChapter?.let {
+                            diaryDao.delete(it)
+                            File(it.pdfPath).delete()
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    App.instance.baseContext,
                                 "Глава \"${selectedChapter!!.name}\" удалена",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
                             mode?.finish()
                         }
                     }
@@ -116,6 +131,18 @@ class CoverRecyclerAdapter(
             holder.ivShare.setOnClickListener {
                 Toast.makeText(App.instance.baseContext, "Поделиться с пользователями", Toast.LENGTH_SHORT).show()
             }
+            val coverPath = items[position].coverPath
+            if(coverPath == null){
+                Picasso.get()
+                    .load(R.drawable.default_cover1)
+                    .placeholder(R.drawable.default_cover1)
+                    .into(holder.ivCover)
+            }else{
+                Picasso.get()
+                    .load(coverPath)
+                    .placeholder(R.drawable.default_cover1)
+                    .into(holder.ivCover)
+            }
         }
     }
 
@@ -128,6 +155,11 @@ class CoverRecyclerAdapter(
     }
 
     inner class CoverViewHolder(view: View): RecyclerView.ViewHolder(view) {
+        val tvName = view.tvName!!
+        val ivShare = view.ivShare!!
+        val ivInfo = view.ivInfo!!
+        val ivCover = view.ivCover!!
+
         init {
             view.setOnClickListener {
                 onItemClickListener.onItemClick(view.tvName.text.toString())
@@ -141,9 +173,9 @@ class CoverRecyclerAdapter(
                     }
                         true
             }
+            ivInfo.setOnClickListener {
+
+            }
         }
-        val tvName = view.tvName!!
-        val ivShare = view.ivShare
-        val ivInfo = view.ivInfo
     }
 }

@@ -23,8 +23,8 @@ import java.io.FileOutputStream
 
 class DiaryRecyclerFragment: Fragment(),
     ChapterNameDialog.OnChapterNameDialogListener,
-    CoverRecyclerAdapter.OnItemClickListener, View.OnClickListener,
-    Searchable {
+    CoverRecyclerAdapter.OnItemClickListener, CoverRecyclerAdapter.OnItemActionsClickListener,
+    View.OnClickListener, Searchable {
 
     lateinit var adapter: CoverRecyclerAdapter
     lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
@@ -36,7 +36,7 @@ class DiaryRecyclerFragment: Fragment(),
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapter = CoverRecyclerAdapter(this, this)
+        adapter = CoverRecyclerAdapter(this, this, this)
         chapterNameDialog = ChapterNameDialog()
 
         recyclerCover.layoutManager = GridLayoutManager(context, 2)
@@ -62,8 +62,8 @@ class DiaryRecyclerFragment: Fragment(),
         (activity as MainActivity).activeFragment = this
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         (activity as MainActivity).activeFragment = null
     }
 
@@ -78,15 +78,17 @@ class DiaryRecyclerFragment: Fragment(),
 
     override fun addChapter(chapter: DiaryChapter) {
         adapter.addChapter(chapter)
-        GlobalScope.launch {
-            delay(800)
-            recyclerCover.smoothScrollToPosition(0)
+        if(adapter.getData().isNotEmpty()) {
+            GlobalScope.launch {
+                delay(800)
+                recyclerCover.smoothScrollToPosition(0)
+            }
         }
         createPdf(chapter)
     }
 
     fun createPdf(chapter: DiaryChapter){
-        val pathName = "${Environment.getExternalStorageDirectory().absoluteFile}/${chapter.name}.pdf"
+        val pathName = "${context!!.filesDir}/${chapter.name}.pdf"
         chapter.pdfPath = pathName
         val document = Document()
         PdfWriter.getInstance(document, FileOutputStream(pathName))
@@ -109,5 +111,11 @@ class DiaryRecyclerFragment: Fragment(),
 
     override fun onItemClick(text: String) {
         onItemClickListener.onItemClick(text)
+    }
+
+    override fun onShareClick() {
+    }
+
+    override fun onInfoClick() {
     }
 }

@@ -1,17 +1,19 @@
 package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
 
+import android.Manifest.permission.READ_EXTERNAL_STORAGE
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.app.ActivityCompat.invalidateOptionsMenu
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.infinity_coder.diarywithyou.R
@@ -26,15 +28,27 @@ import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
-import kotlinx.android.synthetic.main.fragment_diary_recycler.*
+import androidx.lifecycle.ViewModelProviders
+import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
+import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
 import kotlinx.coroutines.*
+import java.io.IOException
+
 
 class DiaryFragment: Fragment(), Searchable {
     var chapterName: String? = null
     lateinit var adapter: PagesRecyclerAdapter
+    lateinit var viewModel: DiaryViewModel
+
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_diary, container, false)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel = ViewModelProviders.of(this).get(DiaryViewModel::class.java)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -42,68 +56,54 @@ class DiaryFragment: Fragment(), Searchable {
         chapterName = arguments?.getString("chapter")
 
         adapter = PagesRecyclerAdapter(this, chapterName)
-            LinearLayoutManager(context)
+        LinearLayoutManager(context)
         val layoutManager = LinearLayoutManager(context)
         layoutManager.reverseLayout = true
         layoutManager.stackFromEnd = true
         recyclerPages.layoutManager = layoutManager
         recyclerPages.adapter = adapter
 
-//        GlobalScope.launch(Dispatchers.IO) {
-//            chapterName = diaryDao.getByName(chapterName!!)
-//
-//            pdfView.fromFile(File(chapterName.pdfPath)).load()
-//        }
         fabCamera.setOnClickListener {
             (activity as MainActivity).closeSearchView()
             startActivityForResult(Intent(context, CameraActivity::class.java), 1)
         }
     }
 
-    fun createPdf(){
-        val document = Document()
-        val pdfPath = "${Environment.getExternalStorageDirectory().absoluteFile}/${UUID.randomUUID()}.pdf"
-        PdfWriter.getInstance(document, FileOutputStream(pdfPath))
-        val pages = adapter.getPages()
-        GlobalScope.launch(Dispatchers.IO) {
-            document.open()
-
-            val font1 = Font(
-                Font.FontFamily.HELVETICA,
-                16F, Font.BOLD
-            )
-
-            for(page in pages) {
-                document.newPage()
-                val title = Paragraph(page.date, font1)
-                title.alignment = Element.ALIGN_CENTER
-                title.spacingAfter = 16F
-                document.add(title)
-
-                val image = Image.getInstance(page.imagePath)
-                document.add(image)
-            }
-            document.close()
-
+    fun createAndOpenPdf(){
+        val pdfPath = try {
+            viewModel.createPdf(adapter.getPages(), context!!.filesDir.path)
+        }catch (e: IOException){ null }
+        if(pdfPath == null)
+            Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+        else {
             val intent = Intent(Intent.ACTION_VIEW)
 
-            val apkURI = FileProvider.getUriForFile(context!!,
-                context?.applicationContext?.packageName + ".provider", File(pdfPath))
+            val apkURI = FileProvider.getUriForFile(
+                context!!,
+                context?.applicationContext?.packageName + ".provider", File(pdfPath)
+            )
             intent.setDataAndType(apkURI, "application/pdf")
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            try{
+            try {
                 startActivity(intent)
-            } catch(e: ActivityNotFoundException) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        context,
-                        "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
+            } catch (e: ActivityNotFoundException) {
+                Toast.makeText(
+                    context,
+                    "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath", Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
+
+    /*fun createPdfWithPermissions(){
+        val permissions = arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE)
+        if(!isPermisssionsGranted(permissions))
+            ActivityCompat.requestPermissions(activity!!, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
+        else
+            createAndOpenPdf()
+    }*/
+
+
 
     override fun onStart() {
         super.onStart()
@@ -111,9 +111,16 @@ class DiaryFragment: Fragment(), Searchable {
         (activity as MainActivity).activeFragment = this
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onStop() {
+        super.onStop()
         (activity as MainActivity).activeFragment = null
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE) {
+            if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
+                createAndOpenPdf()
+        }
     }
 
     @SuppressLint("SimpleDateFormat")
@@ -132,64 +139,6 @@ class DiaryFragment: Fragment(), Searchable {
 
     override fun search(text: String) {
         adapter.filter(text)
-    }
-
-    fun addImageToPdf(imagePath: String, pdfName: String){
-        val newDocument = Document()
-        PdfWriter.getInstance(newDocument, FileOutputStream("${Environment.getExternalStorageDirectory().absoluteFile}/newPage.pdf"))
-        GlobalScope.launch(Dispatchers.IO) {
-            newDocument.open()
-            val font1 = Font(
-                Font.FontFamily.HELVETICA,
-                16F, Font.BOLD
-            )
-            val title = Paragraph("Receipt", font1)
-            title.alignment = Element.ALIGN_CENTER
-            title.spacingAfter = 16F
-            newDocument.add(title)
-
-            val image = Image.getInstance(imagePath)
-            newDocument.add(image)
-            newDocument.close()
-
-            val pdfFile = File("${Environment.getExternalStorageDirectory().absoluteFile}/$pdfName.pdf")
-            val pdfFileCopy = File("${Environment.getExternalStorageDirectory().absoluteFile}/${pdfName}_copy.pdf")
-            pdfFile.renameTo(pdfFileCopy)
-            val reader1 = PdfReader("${Environment.getExternalStorageDirectory().absoluteFile}/newPage.pdf")
-            val reader2 = PdfReader("${Environment.getExternalStorageDirectory().absoluteFile}/${pdfName}_copy.pdf")
-            val document = Document()
-            val fos = FileOutputStream("${Environment.getExternalStorageDirectory().absoluteFile}/${pdfFile.name}")
-            val copy = PdfCopy(document, fos)
-            document.open()
-            var page: PdfImportedPage
-            var stamp: PdfCopy.PageStamp
-            var phrase: Phrase
-            val bf = BaseFont.createFont()
-            val font = Font(bf, 9f)
-            val n = reader1.numberOfPages
-            for (i in 1..reader1.numberOfPages) {
-                page = copy.getImportedPage(reader1, i)
-                stamp = copy.createPageStamp(page)
-                phrase = Phrase("page $i", font)
-                ColumnText.showTextAligned(stamp.overContent, Element.ALIGN_CENTER, phrase, 520f, 5f, 0f)
-                stamp.alterContents()
-                copy.addPage(page)
-            }
-            for (i in 1..reader2.numberOfPages) {
-                page = copy.getImportedPage(reader2, i)
-                stamp = copy.createPageStamp(page)
-                phrase = Phrase("page " + (n + i), font)
-                ColumnText.showTextAligned(stamp.overContent, Element.ALIGN_CENTER, phrase, 520f, 5f, 0f)
-                stamp.alterContents()
-                copy.addPage(page)
-            }
-            val fileNewPage = File("${Environment.getExternalStorageDirectory().absoluteFile}/newPage.pdf")
-            fileNewPage.delete()
-            pdfFileCopy.delete()
-            document.close()
-            reader1.close()
-            reader2.close()
-        }
     }
 
     companion object {
