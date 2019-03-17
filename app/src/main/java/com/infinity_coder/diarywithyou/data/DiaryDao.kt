@@ -29,7 +29,10 @@ interface DiaryDao {
     fun deleteByName(name: String)
 
     @Query("select * from diarypage where chapter = :name")
-    fun getPagesByChapterName(name: String): LiveData<List<DiaryPage>>
+    fun getPagesByChapterNameLive(name: String): LiveData<List<DiaryPage>>
+
+    @Query("select * from diarypage where chapter = :name")
+    fun getPagesByChapterName(name: String): List<DiaryPage>
 
     @Query("SELECT COUNT(id) FROM diarypage where chapter = :name")
     fun getNumberOfPages(name: String): LiveData<Int>

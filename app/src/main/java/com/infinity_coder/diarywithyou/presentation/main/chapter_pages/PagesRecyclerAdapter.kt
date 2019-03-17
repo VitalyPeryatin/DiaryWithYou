@@ -28,7 +28,7 @@ class PagesRecyclerAdapter(private val lifecycleOwner: LifecycleOwner,
     val diaryDao = App.instance.db.diaryDao()
 
     init {
-        diaryDao.getPagesByChapterName(chapterName!!).observe(lifecycleOwner, Observer<List<DiaryPage>> {
+        diaryDao.getPagesByChapterNameLive(chapterName!!).observe(lifecycleOwner, Observer<List<DiaryPage>> {
             pages = it
             filteredPagesLive.postValue(it)
         })

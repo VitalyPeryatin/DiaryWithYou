@@ -2,6 +2,7 @@ package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.*
 import android.widget.Toast
@@ -79,7 +80,7 @@ class CoverRecyclerFragment: Fragment(),
     override fun onShareClick(text: String) {
         GlobalScope.launch {
             val diaryDao = App.instance.db.diaryDao()
-            val pages = diaryDao.getPagesByChapterName(text).value!!
+            val pages = diaryDao.getPagesByChapterName(text)
             val pdfPath = try {
                 val rootDir = App.instance.getRootDir()
                 if (rootDir == null)
@@ -90,19 +91,19 @@ class CoverRecyclerFragment: Fragment(),
                 null
             }
             if (pdfPath == null)
-                Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+                withContext(Dispatchers.Main){
+                    Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+                }
             else {
-                val intent = Intent(Intent.ACTION_VIEW)
+                val intent = Intent(Intent.ACTION_SEND)
 
-                val apkURI = FileProvider.getUriForFile(
-                    context!!,
-                    context?.applicationContext?.packageName + ".provider", File(pdfPath)
-                )
-                intent.setDataAndType(apkURI, "application/pdf")
-                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val apkURI = FileProvider.getUriForFile(context!!,
+                    context?.applicationContext?.packageName + ".provider", File(pdfPath))
+                intent.putExtra(Intent.EXTRA_STREAM, apkURI)
+                intent.type = "application/pdf"
                 withContext(Dispatchers.Main) {
                     try {
-                        startActivity(intent)
+                        startActivity(Intent.createChooser(intent, "Choose app"))
                     } catch (e: ActivityNotFoundException) {
                         Toast.makeText(
                             context,
