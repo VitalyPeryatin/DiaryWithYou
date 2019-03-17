@@ -4,21 +4,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.domain.DiaryPage
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverDiffUtilCallback
+import com.infinity_coder.diarywithyou.data.db.DiaryPage
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_page.view.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 class PagesRecyclerAdapter(private val lifecycleOwner: LifecycleOwner,

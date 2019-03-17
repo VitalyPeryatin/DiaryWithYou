@@ -1,10 +1,12 @@
 package com.infinity_coder.diarywithyou.presentation.main
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
@@ -17,13 +19,16 @@ import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_
 import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.DiaryFragment
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerAdapter
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.DiaryRecyclerFragment
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerFragment
+import com.infinity_coder.diarywithyou.presentation.toast
 import kotlinx.android.synthetic.main.activity_main.*
+
+
 
 
 class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListener {
 
-    lateinit var diaryRecyclerFragment: DiaryRecyclerFragment
+    lateinit var diaryRecyclerFragment: CoverRecyclerFragment
     var activeFragment: Fragment? = null
     lateinit var searchView: SearchView
 
@@ -35,23 +40,17 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
+        // supportActionBar?.setDisplayShowTitleEnabled(false)
 
 
         diaryRecyclerFragment =
-            DiaryRecyclerFragment.newInstance(this)
+            CoverRecyclerFragment.newInstance(this)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_place, diaryRecyclerFragment)
             .commit()
         optionsMenu.observe(this, Observer<MenuType>{
             invalidateOptionsMenu()
         })
-    }
-
-    override fun onStart() {
-        super.onStart()
-        val permissions = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        if(!isPermisssionsGranted(permissions))
-            ActivityCompat.requestPermissions(this, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
     }
 
     override fun onItemClick(text: String) {
@@ -65,7 +64,10 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
         closeSearchView()
     }
 
-
+    override fun onStart() {
+        super.onStart()
+        requestPermissionsIfNeed()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         if(optionsMenu.value == MenuType.CHAPTERS) {
@@ -79,7 +81,6 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                Toast.makeText(this@MainActivity, "Готово: $query", Toast.LENGTH_SHORT).show()
                 return false
             }
 
@@ -102,8 +103,21 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
                     (activeFragment as DiaryFragment).createAndOpenPdf()
                 }
             }
+            android.R.id.home -> onBackPressed()
         }
         return true
+    }
+
+    fun requestPermissionsIfNeed(){
+        val permissions = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        if(!isPermisssionsGranted(permissions))
+            ActivityCompat.requestPermissions(this, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE){
+            requestPermissionsIfNeed()
+        }
     }
 
     fun closeSearchView(){

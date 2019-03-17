@@ -1,8 +1,7 @@
 package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
 
 import androidx.recyclerview.widget.DiffUtil
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
-import com.infinity_coder.diarywithyou.domain.DiaryPage
+import com.infinity_coder.diarywithyou.data.db.DiaryPage
 
 class PageDiffUtilCallback(private val oldList: List<DiaryPage>,
                            private val newList: List<DiaryPage>): DiffUtil.Callback() {

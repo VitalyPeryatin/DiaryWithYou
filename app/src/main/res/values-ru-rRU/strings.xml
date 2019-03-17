@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Navigator</string>
+    <string name="diary_title">Ежедневник</string>
+    <string name="name_hint">Название</string>
+</resources>

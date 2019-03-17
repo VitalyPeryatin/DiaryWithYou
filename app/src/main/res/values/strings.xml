@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">DiaryWithYou</string>
+    <string name="app_name">Navigator</string>
+    <string name="diary_title">Diary</string>
+    <string name="name_hint">Name</string>
 </resources>

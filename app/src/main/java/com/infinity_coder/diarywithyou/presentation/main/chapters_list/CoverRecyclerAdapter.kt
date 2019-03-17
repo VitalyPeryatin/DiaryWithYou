@@ -11,7 +11,9 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
+import com.infinity_coder.diarywithyou.data.db.CoverCard
+import com.infinity_coder.diarywithyou.data.db.DiaryChapter
+import com.infinity_coder.diarywithyou.data.repositories.CoverCardRepository
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_cover.view.*
 import kotlinx.coroutines.Dispatchers
@@ -22,24 +24,25 @@ import java.io.File
 
 
 class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListener: OnItemClickListener,
-                           val onItemActionsClickListener: OnItemActionsClickListener):
+                           val onShareClickListener: OnShareClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
-    private var items = listOf<DiaryChapter>()
+    private var items = listOf<CoverCard>()
 
-    private var oldFilteredItems = listOf<DiaryChapter>()
-    private var filteredItems = MutableLiveData<List<DiaryChapter>>()
+    private var oldFilteredItems = listOf<CoverCard>()
+    private var filteredItems = MutableLiveData<List<CoverCard>>()
     private var viewWithActionBar: AppCompatActivity? = null
     private val diaryDao = App.instance.db.diaryDao()
-    private var selectedChapter: DiaryChapter? = null
+    private var selectedChapter: CoverCard? = null
 
     init {
-        diaryDao.getAllChapters().observe(lifecycleOwner, Observer<List<DiaryChapter>> { newItems ->
+        val repository = CoverCardRepository()
+        repository.getCoverCards().observe(lifecycleOwner, Observer<List<CoverCard>> {newItems ->
             items = newItems.reversed()
             filteredItems.postValue(items)
         })
 
-        filteredItems.observe(lifecycleOwner, Observer<List<DiaryChapter>> { newItems ->
+        filteredItems.observe(lifecycleOwner, Observer<List<CoverCard>> { newItems ->
             val coverDiffUtilCallback = CoverDiffUtilCallback(oldFilteredItems, newItems)
             val diffResult = DiffUtil.calculateDiff(coverDiffUtilCallback)
             oldFilteredItems = newItems
@@ -47,12 +50,16 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         })
     }
 
-    fun getData(): List<DiaryChapter>{
+    fun getData(): List<CoverCard>{
         return oldFilteredItems
     }
 
     interface OnItemClickListener{
         fun onItemClick(text: String)
+    }
+
+    interface OnShareClickListener{
+        fun onShareClick(text: String)
     }
 
     interface OnItemActionsClickListener{
@@ -74,12 +81,12 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
                 R.id.menu_remove -> {
                     GlobalScope.launch {
                         selectedChapter?.let {
-                            diaryDao.delete(it)
-                            File(it.pdfPath).delete()
+                            diaryDao.delete(it.diaryChapter!!)
+                            File(it.diaryChapter!!.pdfPath).delete()
                             withContext(Dispatchers.Main) {
                                 Toast.makeText(
                                     App.instance.baseContext,
-                                "Глава \"${selectedChapter!!.name}\" удалена",
+                                "Глава \"${selectedChapter?.diaryChapter!!.name}\" удалена",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -106,12 +113,11 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             currentActionMode = null
             selectedChapter = null
         }
-
     }
 
     fun filter(text: String){
         filteredItems.postValue(items.filter {
-                s -> text.toLowerCase() in s.name.toLowerCase()
+                s -> text.toLowerCase() in s.diaryChapter!!.name.toLowerCase()
         })
     }
 
@@ -124,23 +130,26 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
 
     override fun onBindViewHolder(holder: CoverViewHolder, position: Int) {
         filteredItems.value?.let { items ->
-            holder.tvName.text = items[position].name
-            holder.ivInfo.setOnClickListener {
-                Toast.makeText(App.instance.baseContext, "Информация о главе", Toast.LENGTH_SHORT).show()
-            }
-            holder.ivShare.setOnClickListener {
-                Toast.makeText(App.instance.baseContext, "Поделиться с пользователями", Toast.LENGTH_SHORT).show()
-            }
-            val coverPath = items[position].coverPath
+            holder.tvName.text = items[position].diaryChapter!!.name
+            holder.tvPageNum.text = items[position].getPagesSize().toString()
+            val coverPath = items[position].diaryChapter!!.coverPath
             if(coverPath == null){
                 Picasso.get()
                     .load(R.drawable.default_cover1)
-                    .placeholder(R.drawable.default_cover1)
+                    .transform(CropSquareTransformation())
+                    .placeholder(R.drawable.image_placeholder)
+                    .fit()
+                    .noFade()
+                    .centerCrop()
                     .into(holder.ivCover)
             }else{
                 Picasso.get()
-                    .load(coverPath)
-                    .placeholder(R.drawable.default_cover1)
+                    .load(File(coverPath))
+                    .transform(CropSquareTransformation())
+                    .placeholder(R.drawable.image_placeholder)
+                    .fit()
+                    .noFade()
+                    .centerCrop()
                     .into(holder.ivCover)
             }
         }
@@ -156,11 +165,14 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
 
     inner class CoverViewHolder(view: View): RecyclerView.ViewHolder(view) {
         val tvName = view.tvName!!
+        val tvPageNum = view.tvPageNum!!
         val ivShare = view.ivShare!!
-        val ivInfo = view.ivInfo!!
         val ivCover = view.ivCover!!
 
         init {
+            ivShare.setOnClickListener(View.OnClickListener {
+                onShareClickListener.onShareClick(view.tvName.text.toString())
+            })
             view.setOnClickListener {
                 onItemClickListener.onItemClick(view.tvName.text.toString())
             }
@@ -172,9 +184,6 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
                         view.isSelected = true
                     }
                         true
-            }
-            ivInfo.setOnClickListener {
-
             }
         }
     }

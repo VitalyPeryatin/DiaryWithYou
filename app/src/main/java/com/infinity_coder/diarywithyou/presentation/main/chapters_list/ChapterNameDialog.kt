@@ -14,7 +14,7 @@ import androidx.appcompat.widget.ListPopupWindow.MATCH_PARENT
 import androidx.appcompat.widget.ListPopupWindow.WRAP_CONTENT
 import androidx.fragment.app.DialogFragment
 import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
+import com.infinity_coder.diarywithyou.data.db.DiaryChapter
 import com.infinity_coder.diarywithyou.presentation.RESULT_LOAD_IMAGE
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.dialog_chapter_name.*

@@ -1,37 +1,46 @@
 package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
 import android.view.*
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.GridLayoutManager
+import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
+import com.infinity_coder.diarywithyou.data.db.DiaryChapter
 import com.infinity_coder.diarywithyou.presentation.main.MainActivity
 import com.infinity_coder.diarywithyou.presentation.main.Searchable
 import com.itextpdf.text.Document
 import com.itextpdf.text.Paragraph
 import com.itextpdf.text.pdf.PdfWriter
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_diary_recycler.*
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.android.synthetic.main.fragment_cover_recycler.*
+import kotlinx.coroutines.*
+import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
-class DiaryRecyclerFragment: Fragment(),
+class CoverRecyclerFragment: Fragment(),
     ChapterNameDialog.OnChapterNameDialogListener,
-    CoverRecyclerAdapter.OnItemClickListener, CoverRecyclerAdapter.OnItemActionsClickListener,
-    View.OnClickListener, Searchable {
+    CoverRecyclerAdapter.OnItemClickListener,
+    CoverRecyclerAdapter.OnShareClickListener, View.OnClickListener, Searchable {
 
     lateinit var adapter: CoverRecyclerAdapter
     lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
     lateinit var chapterNameDialog: ChapterNameDialog
+    lateinit var viewModel: CoverRecyclerViewModel
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel = ViewModelProviders.of(this).get(CoverRecyclerViewModel::class.java)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_diary_recycler, container, false)
+        return inflater.inflate(R.layout.fragment_cover_recycler, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -48,7 +57,7 @@ class DiaryRecyclerFragment: Fragment(),
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         adapter.addViewWithActionBar(activity as AppCompatActivity)
-        (activity as MainActivity).activeFragment = this
+        (activity as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
     }
 
     override fun onDestroy() {
@@ -65,6 +74,45 @@ class DiaryRecyclerFragment: Fragment(),
     override fun onStop() {
         super.onStop()
         (activity as MainActivity).activeFragment = null
+    }
+
+    override fun onShareClick(text: String) {
+        GlobalScope.launch {
+            val diaryDao = App.instance.db.diaryDao()
+            val pages = diaryDao.getPagesByChapterName(text).value!!
+            val pdfPath = try {
+                val rootDir = App.instance.getRootDir()
+                if (rootDir == null)
+                    throw IOException()
+                else
+                    viewModel.createPdf(pages, "$rootDir/$text.pdf")
+            } catch (e: IOException) {
+                null
+            }
+            if (pdfPath == null)
+                Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+            else {
+                val intent = Intent(Intent.ACTION_VIEW)
+
+                val apkURI = FileProvider.getUriForFile(
+                    context!!,
+                    context?.applicationContext?.packageName + ".provider", File(pdfPath)
+                )
+                intent.setDataAndType(apkURI, "application/pdf")
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                withContext(Dispatchers.Main) {
+                    try {
+                        startActivity(intent)
+                    } catch (e: ActivityNotFoundException) {
+                        Toast.makeText(
+                            context,
+                            "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onClick(v: View?) {
@@ -98,8 +146,8 @@ class DiaryRecyclerFragment: Fragment(),
     }
 
     companion object {
-        fun newInstance(onItemClickListener: CoverRecyclerAdapter.OnItemClickListener): DiaryRecyclerFragment {
-            val fragment = DiaryRecyclerFragment()
+        fun newInstance(onItemClickListener: CoverRecyclerAdapter.OnItemClickListener): CoverRecyclerFragment {
+            val fragment = CoverRecyclerFragment()
             fragment.onItemClickListener = onItemClickListener
             return fragment
         }
@@ -111,11 +159,5 @@ class DiaryRecyclerFragment: Fragment(),
 
     override fun onItemClick(text: String) {
         onItemClickListener.onItemClick(text)
-    }
-
-    override fun onShareClick() {
-    }
-
-    override fun onInfoClick() {
     }
 }

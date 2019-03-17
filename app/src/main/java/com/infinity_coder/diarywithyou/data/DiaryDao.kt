@@ -2,8 +2,11 @@ package com.infinity_coder.diarywithyou.data
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.infinity_coder.diarywithyou.domain.DiaryChapter
-import com.infinity_coder.diarywithyou.domain.DiaryPage
+import com.infinity_coder.diarywithyou.data.db.DiaryChapter
+import com.infinity_coder.diarywithyou.data.db.DiaryPage
+import androidx.room.Transaction
+import com.infinity_coder.diarywithyou.data.db.CoverCard
+
 
 @Dao
 interface DiaryDao {
@@ -27,4 +30,11 @@ interface DiaryDao {
 
     @Query("select * from diarypage where chapter = :name")
     fun getPagesByChapterName(name: String): LiveData<List<DiaryPage>>
+
+    @Query("SELECT COUNT(id) FROM diarypage where chapter = :name")
+    fun getNumberOfPages(name: String): LiveData<Int>
+
+    @Transaction
+    @Query("SELECT * from DiaryChapter")
+    fun getCoverCards(): LiveData<List<CoverCard>>
 }

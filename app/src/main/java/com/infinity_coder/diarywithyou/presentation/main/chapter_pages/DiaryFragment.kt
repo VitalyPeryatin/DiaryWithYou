@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,6 +30,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProviders
+import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
 import kotlinx.coroutines.*
@@ -51,6 +53,11 @@ class DiaryFragment: Fragment(), Searchable {
         viewModel = ViewModelProviders.of(this).get(DiaryViewModel::class.java)
     }
 
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        (activity as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         chapterName = arguments?.getString("chapter")
@@ -71,7 +78,11 @@ class DiaryFragment: Fragment(), Searchable {
 
     fun createAndOpenPdf(){
         val pdfPath = try {
-            viewModel.createPdf(adapter.getPages(), context!!.filesDir.path)
+            val rootDir = App.instance.getRootDir()
+            if(rootDir == null)
+                throw IOException()
+            else
+                viewModel.createPdf(adapter.getPages(), "$rootDir/$chapterName.pdf")
         }catch (e: IOException){ null }
         if(pdfPath == null)
             Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
@@ -98,7 +109,7 @@ class DiaryFragment: Fragment(), Searchable {
     /*fun createPdfWithPermissions(){
         val permissions = arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE)
         if(!isPermisssionsGranted(permissions))
-            ActivityCompat.requestPermissions(activity!!, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
+            ActivityCompat.requestPermissionsIfNeed(activity!!, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
         else
             createAndOpenPdf()
     }*/

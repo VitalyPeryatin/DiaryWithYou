@@ -1,6 +1,5 @@
-package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
+package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
-import android.os.Environment
 import androidx.lifecycle.ViewModel
 import com.infinity_coder.diarywithyou.data.db.DiaryPage
 import com.itextpdf.text.*
@@ -9,10 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileOutputStream
-import java.util.*
-import kotlin.Exception
 
-class DiaryViewModel: ViewModel() {
+class CoverRecyclerViewModel: ViewModel() {
     fun createPdf(pages: List<DiaryPage>, pdfPath: String): String? = runBlocking (Dispatchers.IO){
         try {
             val file = File(pdfPath)

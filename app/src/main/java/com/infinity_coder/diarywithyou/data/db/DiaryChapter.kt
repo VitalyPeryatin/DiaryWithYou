@@ -1,4 +1,4 @@
-package com.infinity_coder.diarywithyou.domain
+package com.infinity_coder.diarywithyou.data.db
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
