@@ -2,4 +2,7 @@
     <string name="app_name">Navigator</string>
     <string name="diary_title">Diary</string>
     <string name="name_hint">Name</string>
+    <string name="empty_document">Document is empty</string>
+    <string name="share_with">Share with:</string>
+    <string name="no_app_to_open_pdf">"You don't have a program to view the file. Path to system file: "</string>
 </resources>

@@ -4,10 +4,6 @@ import android.Manifest
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.view.View.GONE
-import android.view.View.VISIBLE
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
@@ -20,31 +16,22 @@ import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.DiaryFragment
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerFragment
-import com.infinity_coder.diarywithyou.presentation.toast
 import kotlinx.android.synthetic.main.activity_main.*
-
-
-
 
 class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListener {
 
-    lateinit var diaryRecyclerFragment: CoverRecyclerFragment
     var activeFragment: Fragment? = null
-    lateinit var searchView: SearchView
-
-    enum class MenuType{CHAPTERS, PAGES}
-
     val optionsMenu = MutableLiveData<MenuType>()
+    private lateinit var diaryRecyclerFragment: CoverRecyclerFragment
+    private lateinit var searchView: SearchView
+    enum class MenuType{CHAPTERS, PAGES}
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-        // supportActionBar?.setDisplayShowTitleEnabled(false)
 
-
-        diaryRecyclerFragment =
-            CoverRecyclerFragment.newInstance(this)
+        diaryRecyclerFragment = CoverRecyclerFragment.newInstance(this)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_place, diaryRecyclerFragment)
             .commit()

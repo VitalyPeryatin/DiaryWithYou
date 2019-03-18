@@ -3,4 +3,7 @@
     <string name="app_name">Navigator</string>
     <string name="diary_title">Ежедневник</string>
     <string name="name_hint">Название</string>
+    <string name="empty_document">Документ пуст</string>
+    <string name="share_with">"Поделиться с помощью: "</string>
+    <string name="no_app_to_open_pdf">"У Вас нет программы для просмотра файла. Путь к системному файлу: "</string>
 </resources>

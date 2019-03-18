@@ -2,10 +2,10 @@ package com.infinity_coder.diarywithyou.presentation.main.chapters_list
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.view.*
-import android.widget.Toast
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
@@ -14,8 +14,11 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
+import com.infinity_coder.diarywithyou.presentation.DIALOG_FRAGMENT_KEY
+import com.infinity_coder.diarywithyou.presentation.PDF_EXT
 import com.infinity_coder.diarywithyou.presentation.main.MainActivity
 import com.infinity_coder.diarywithyou.presentation.main.Searchable
+import com.infinity_coder.diarywithyou.presentation.toast
 import com.itextpdf.text.Document
 import com.itextpdf.text.Paragraph
 import com.itextpdf.text.pdf.PdfWriter
@@ -30,10 +33,10 @@ class CoverRecyclerFragment: Fragment(),
     CoverRecyclerAdapter.OnItemClickListener,
     CoverRecyclerAdapter.OnShareClickListener, View.OnClickListener, Searchable {
 
-    lateinit var adapter: CoverRecyclerAdapter
-    lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
-    lateinit var chapterNameDialog: ChapterNameDialog
-    lateinit var viewModel: CoverRecyclerViewModel
+    private lateinit var adapter: CoverRecyclerAdapter
+    private lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
+    private lateinit var chapterNameDialog: ChapterNameDialog
+    private lateinit var viewModel: CoverRecyclerViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,7 +95,7 @@ class CoverRecyclerFragment: Fragment(),
             }
             if (pdfPath == null)
                 withContext(Dispatchers.Main){
-                    Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+                    context?.toast(resources.getString(R.string.empty_document))
                 }
             else {
                 val intent = Intent(Intent.ACTION_SEND)
@@ -103,13 +106,9 @@ class CoverRecyclerFragment: Fragment(),
                 intent.type = "application/pdf"
                 withContext(Dispatchers.Main) {
                     try {
-                        startActivity(Intent.createChooser(intent, "Choose app"))
+                        startActivity(Intent.createChooser(intent, resources.getString(R.string.share_with)))
                     } catch (e: ActivityNotFoundException) {
-                        Toast.makeText(
-                            context,
-                            "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        context?.toast(resources.getString(R.string.no_app_to_open_pdf) + pdfPath)
                     }
                 }
             }
@@ -119,7 +118,7 @@ class CoverRecyclerFragment: Fragment(),
     override fun onClick(v: View?) {
         when(v?.id){
             R.id.fabRecycler -> {
-                chapterNameDialog.show(childFragmentManager, "dialog")
+                chapterNameDialog.show(childFragmentManager, DIALOG_FRAGMENT_KEY)
                 (activity as MainActivity).closeSearchView()
             }
         }
@@ -136,8 +135,8 @@ class CoverRecyclerFragment: Fragment(),
         createPdf(chapter)
     }
 
-    fun createPdf(chapter: DiaryChapter){
-        val pathName = "${context!!.filesDir}/${chapter.name}.pdf"
+    private fun createPdf(chapter: DiaryChapter){
+        val pathName = "${context!!.filesDir}/${chapter.name}.$PDF_EXT"
         chapter.pdfPath = pathName
         val document = Document()
         PdfWriter.getInstance(document, FileOutputStream(pathName))
@@ -146,19 +145,19 @@ class CoverRecyclerFragment: Fragment(),
         document.close()
     }
 
-    companion object {
-        fun newInstance(onItemClickListener: CoverRecyclerAdapter.OnItemClickListener): CoverRecyclerFragment {
-            val fragment = CoverRecyclerFragment()
-            fragment.onItemClickListener = onItemClickListener
-            return fragment
-        }
-    }
-
     override fun search(text: String) {
         adapter.filter(text)
     }
 
     override fun onItemClick(text: String) {
         onItemClickListener.onItemClick(text)
+    }
+
+    companion object {
+        fun newInstance(onItemClickListener: CoverRecyclerAdapter.OnItemClickListener): CoverRecyclerFragment {
+            val fragment = CoverRecyclerFragment()
+            fragment.onItemClickListener = onItemClickListener
+            return fragment
+        }
     }
 }
