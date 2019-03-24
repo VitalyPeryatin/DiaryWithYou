@@ -1,4 +1,4 @@
-package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
+package com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler
 
 import android.view.LayoutInflater
 import android.view.View
@@ -8,50 +8,58 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.DiaryPage
+import com.infinity_coder.diarywithyou.data.repositories.DiaryPagesRepository
+import com.infinity_coder.diarywithyou.domain.diary_pages.DiaryPagesInteractor
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_page.view.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import java.io.File
 
-class PagesRecyclerAdapter(private val lifecycleOwner: LifecycleOwner,
-                           val chapterName: String?): RecyclerView.Adapter<PagesRecyclerAdapter.PagesViewHolder>() {
+class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?):
+    RecyclerView.Adapter<PagesRecyclerAdapter.PagesViewHolder>() {
 
-
+    // Все страницы, лежащие в ежедневнике
     private var pages = listOf<DiaryPage>()
+    // Старый отфильтрованный список
     private var oldFilteredPages = listOf<DiaryPage>()
+    // Список, подписанный на изменения данных
     private var filteredPagesLive = MutableLiveData<List<DiaryPage>>()
-    val diaryDao = App.instance.db.diaryDao()
+
+    private val diaryPagesInteractor =
+        DiaryPagesInteractor(DiaryPagesRepository())
 
     init {
-        diaryDao.getPagesByChapterNameLive(chapterName!!).observe(lifecycleOwner, Observer<List<DiaryPage>> {
+        diaryPagesInteractor.getPagesByChapterNameLive(chapterName)?.observe(lifecycleOwner, Observer<List<DiaryPage>> {
             pages = it
             filteredPagesLive.postValue(it)
         })
 
+        // Подписывается на изменения и обновляет старый отфильтрованный список
         filteredPagesLive.observe(lifecycleOwner, Observer<List<DiaryPage>> {
             val coverDiffUtilCallback = PageDiffUtilCallback(oldFilteredPages, it)
             val diffResult = DiffUtil.calculateDiff(coverDiffUtilCallback)
             oldFilteredPages = it
             diffResult.dispatchUpdatesTo(this)
-
         })
     }
 
-    fun getPages(): List<DiaryPage>{
-        return filteredPagesLive.value!!
-    }
+    /**
+     * Получает все старницы ежедневника в отфильрованном виде из LiveData
+     * @return список старниц ежедневника
+     */
+    fun getPages(): List<DiaryPage> = filteredPagesLive.value!!
 
+    /**
+     * Добавить страницу
+     */
     fun addPage(chapterName: String, imagePath: String, date: String){
-        GlobalScope.launch(Dispatchers.IO) {
-            diaryDao.insertPage(DiaryPage(chapterName, imagePath, date))
-        }
+        diaryPagesInteractor.insertPage(DiaryPage(chapterName, imagePath, date))
     }
 
+    /**
+     * Фильтрует страницы по введённой дате
+     */
     fun filter(text: String){
         filteredPagesLive.postValue(pages.filter {
                 s -> text in s.date
@@ -60,7 +68,9 @@ class PagesRecyclerAdapter(private val lifecycleOwner: LifecycleOwner,
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PagesViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_page, parent, false)
-        return PagesViewHolder(view)
+        return PagesViewHolder(
+            view
+        )
     }
 
     override fun getItemCount(): Int = oldFilteredPages.size
@@ -68,6 +78,7 @@ class PagesRecyclerAdapter(private val lifecycleOwner: LifecycleOwner,
     override fun onBindViewHolder(holder: PagesViewHolder, position: Int) {
         Picasso.get()
             .load(File(oldFilteredPages[position].imagePath))
+            .noFade()
             .into(holder.photo)
         holder.tvDate.text = oldFilteredPages[position].date
     }

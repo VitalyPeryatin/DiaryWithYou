@@ -1,8 +1,11 @@
-package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
+package com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler
 
 import androidx.recyclerview.widget.DiffUtil
 import com.infinity_coder.diarywithyou.data.db.DiaryPage
 
+/**
+ * Сравнивает старый список, переданный в адаптер, и новый. Если элементы разные, элементы обновляются.
+ */
 class PageDiffUtilCallback(private val oldList: List<DiaryPage>,
                            private val newList: List<DiaryPage>): DiffUtil.Callback() {
 

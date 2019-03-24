@@ -196,7 +196,7 @@ class CoverRecyclerFragment: Fragment(),
         document.close()
     }
 
-    override fun search(text: String) {
+    override fun searchByDate(text: String) {
         adapter.filter(text)
     }
 

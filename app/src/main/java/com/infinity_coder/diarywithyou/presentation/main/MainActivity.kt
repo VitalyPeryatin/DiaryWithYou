@@ -13,7 +13,7 @@ import androidx.lifecycle.Observer
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
-import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.DiaryFragment
+import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.DiaryFragment
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.CoverRecyclerFragment
 import kotlinx.android.synthetic.main.activity_main.*
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
             override fun onQueryTextChange(newText: String?): Boolean {
                 newText?.let {
                     if (activeFragment is Searchable) {
-                        (activeFragment as Searchable).search(newText)
+                        (activeFragment as Searchable).searchByDate(newText)
                     }
                 }
                 return true

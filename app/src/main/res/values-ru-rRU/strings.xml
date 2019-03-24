@@ -10,4 +10,6 @@
     <string name="capturing_picture">Обработка изображения…</string>
     <string name="camera_exception">Произошла ошибка камеры #</string>
     <string name="camera_mode">Режим камеры: </string>
+    <string name="chapter">Глава</string>
+    <string name="deleted">была удалена</string>
 </resources>

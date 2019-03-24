@@ -10,4 +10,6 @@
     <string name="capturing_picture">Capturing picture…</string>
     <string name="camera_exception">Got CameraException #</string>
     <string name="camera_mode">Camera mode: </string>
+    <string name="chapter">Chapter</string>
+    <string name="deleted">was deleted</string>
 </resources>

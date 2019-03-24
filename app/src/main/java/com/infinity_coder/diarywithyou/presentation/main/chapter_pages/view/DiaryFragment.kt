@@ -1,56 +1,45 @@
-package com.infinity_coder.diarywithyou.presentation.main.chapter_pages
+package com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view
 
-import android.Manifest.permission.READ_EXTERNAL_STORAGE
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Environment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.presentation.camera.CameraActivity
 import com.infinity_coder.diarywithyou.presentation.main.MainActivity
 import com.infinity_coder.diarywithyou.presentation.main.Searchable
-import com.itextpdf.text.*
-import com.itextpdf.text.pdf.*
 import kotlinx.android.synthetic.main.fragment_diary.*
 import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProviders
 import com.infinity_coder.diarywithyou.App
+import com.infinity_coder.diarywithyou.presentation.CAMERA_REQUEST_CODE
+import com.infinity_coder.diarywithyou.presentation.CHAPTER_KEY
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
-import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
+import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler.PagesRecyclerAdapter
+import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view_model.DiaryViewModel
 import kotlinx.coroutines.*
 import java.io.IOException
 
 
 class DiaryFragment: Fragment(), Searchable {
-    var chapterName: String? = null
-    lateinit var adapter: PagesRecyclerAdapter
-    lateinit var viewModel: DiaryViewModel
-
-
+    private var chapterName: String? = null
+    private val adapter: PagesRecyclerAdapter by lazy { PagesRecyclerAdapter(this, chapterName) }
+    private val viewModel: DiaryViewModel by lazy { ViewModelProviders.of(this).get(DiaryViewModel::class.java) }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_diary, container, false)
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(DiaryViewModel::class.java)
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
@@ -60,9 +49,8 @@ class DiaryFragment: Fragment(), Searchable {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        chapterName = arguments?.getString("chapter")
+        chapterName = arguments?.getString(CHAPTER_KEY)
 
-        adapter = PagesRecyclerAdapter(this, chapterName)
         LinearLayoutManager(context)
         val layoutManager = LinearLayoutManager(context)
         layoutManager.reverseLayout = true
@@ -72,7 +60,7 @@ class DiaryFragment: Fragment(), Searchable {
 
         fabCamera.setOnClickListener {
             (activity as MainActivity).closeSearchView()
-            startActivityForResult(Intent(context, CameraActivity::class.java), 1)
+            startActivityForResult(Intent(context, CameraActivity::class.java), CAMERA_REQUEST_CODE)
         }
     }
 
@@ -85,7 +73,7 @@ class DiaryFragment: Fragment(), Searchable {
                 viewModel.createPdf(adapter.getPages(), "$rootDir/$chapterName.pdf")
         }catch (e: IOException){ null }
         if(pdfPath == null)
-            Toast.makeText(context, "Документ пуст", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, resources.getString(R.string.empty_document), Toast.LENGTH_SHORT).show()
         else {
             val intent = Intent(Intent.ACTION_VIEW)
 
@@ -100,21 +88,11 @@ class DiaryFragment: Fragment(), Searchable {
             } catch (e: ActivityNotFoundException) {
                 Toast.makeText(
                     context,
-                    "У Вас нет программы для просмотра файла. \nПуть к системному файлу: $pdfPath", Toast.LENGTH_SHORT
+                    "${resources.getString(R.string.no_app_to_open_pdf)}$pdfPath", Toast.LENGTH_SHORT
                 ).show()
             }
         }
     }
-
-    /*fun createPdfWithPermissions(){
-        val permissions = arrayOf(READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE)
-        if(!isPermisssionsGranted(permissions))
-            ActivityCompat.requestPermissionsIfNeed(activity!!, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
-        else
-            createAndOpenPdf()
-    }*/
-
-
 
     override fun onStart() {
         super.onStart()
@@ -127,6 +105,10 @@ class DiaryFragment: Fragment(), Searchable {
         (activity as MainActivity).activeFragment = null
     }
 
+    /**
+     * Проеряет разрешение для досутпа к внешним файлам, при положительном ответе создаёт во
+     * внешней директории pdf-файл
+     */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE) {
             if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
@@ -134,10 +116,13 @@ class DiaryFragment: Fragment(), Searchable {
         }
     }
 
+    /**
+     * Добавляет новую страницу в адаптер, полученную с камеры
+     */
     @SuppressLint("SimpleDateFormat")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if(requestCode == 1 && resultCode == RESULT_OK){
+        if(requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK){
             val imagePath = data?.getStringExtra("imagePath")!!
             val date = SimpleDateFormat("dd.MM.yyyy").format(Date())
             adapter.addPage(chapterName!!, imagePath, date)
@@ -148,7 +133,10 @@ class DiaryFragment: Fragment(), Searchable {
         }
     }
 
-    override fun search(text: String) {
+    /**
+     * Ищест страницы по дате, введённой в виде строки
+     */
+    override fun searchByDate(text: String) {
         adapter.filter(text)
     }
 
@@ -156,7 +144,7 @@ class DiaryFragment: Fragment(), Searchable {
         fun newInstance(text: String): DiaryFragment {
             val fragment = DiaryFragment()
             val bundle = Bundle()
-            bundle.putString("chapter", text)
+            bundle.putString(CHAPTER_KEY, text)
             fragment.arguments = bundle
             return fragment
         }

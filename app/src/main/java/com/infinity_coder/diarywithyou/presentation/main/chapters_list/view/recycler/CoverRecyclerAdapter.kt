@@ -13,7 +13,8 @@ import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.CoverCard
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
-import com.infinity_coder.diarywithyou.data.repositories.CoverCardRepository
+import com.infinity_coder.diarywithyou.data.repositories.ChapterRepository
+import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CropSquareTransformation
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_cover.view.*
@@ -25,8 +26,7 @@ import java.io.File
 
 
 class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListener: OnItemClickListener,
-                           val onShareClickListener: OnShareClickListener
-):
+                           val onShareClickListener: OnShareClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
     private var items = listOf<CoverCard>()
@@ -36,9 +36,12 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
     private var viewWithActionBar: AppCompatActivity? = null
     private val diaryDao = App.instance.db.diaryDao()
     private var selectedChapter: CoverCard? = null
+    private val res = App.instance.resources
+
+    private val chapterInteractor = ChapterInteractor(ChapterRepository())
 
     init {
-        val repository = CoverCardRepository()
+        val repository = ChapterRepository()
         repository.getCoverCards().observe(lifecycleOwner, Observer<List<CoverCard>> {newItems ->
             items = newItems.reversed()
             filteredItems.postValue(items)
@@ -68,17 +71,9 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         fun onShareClick(text: String)
     }
 
-    interface OnItemActionsClickListener{
-        fun onShareClick()
-        fun onInfoClick()
-    }
-
     fun addChapter(diaryChapter: DiaryChapter){
-        GlobalScope.launch(Dispatchers.IO) {
-            diaryDao.insertChapter(diaryChapter)
-        }
+        chapterInteractor.insertChapter(diaryChapter)
     }
-
 
     private var currentActionMode: ActionMode? = null
     private val modeCallback: ActionMode.Callback = object: ActionMode.Callback{
@@ -86,18 +81,10 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             when(item?.itemId){
                 R.id.menu_remove -> {
                     GlobalScope.launch {
-                        selectedChapter?.let {
-                            diaryDao.delete(it.diaryChapter!!)
-                            File(it.diaryChapter!!.pdfPath).delete()
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(
-                                    App.instance.baseContext,
-                                "Глава \"${selectedChapter?.diaryChapter!!.name}\" удалена",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            mode?.finish()
-                        }
+                        diaryDao.delete(selectedChapter?.diaryChapter!!)
+                        File(selectedChapter?.diaryChapter!!.pdfPath).delete()
+                        toast("${res.getString(R.string.chapter)} \"${selectedChapter?.diaryChapter!!.name}\" ${res.getString(R.string.deleted)}")
+                        mode?.finish()
                     }
                 }
                 else -> return false
@@ -169,16 +156,21 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         viewWithActionBar = null
     }
 
+    private suspend fun toast(text: String){
+        withContext(Dispatchers.Main) {
+            Toast.makeText(App.instance.baseContext, text, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     inner class CoverViewHolder(view: View): RecyclerView.ViewHolder(view) {
         val tvName = view.tvName!!
         val tvPageNum = view.tvPageNum!!
-        val ivShare = view.ivShare!!
         val ivCover = view.ivCover!!
 
         init {
-            ivShare.setOnClickListener(View.OnClickListener {
+            view.ivShare!!.setOnClickListener {
                 onShareClickListener.onShareClick(view.tvName.text.toString())
-            })
+            }
             view.setOnClickListener {
                 onItemClickListener.onItemClick(view.tvName.text.toString())
             }
