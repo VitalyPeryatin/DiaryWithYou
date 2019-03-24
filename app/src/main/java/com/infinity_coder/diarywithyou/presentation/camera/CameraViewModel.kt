@@ -7,7 +7,7 @@ import java.io.FileOutputStream
 import java.util.*
 
 class CameraViewModel: ViewModel() {
-    fun saveBitmapTo(bitmap: Bitmap?, parentDir: String): String {
+    fun saveBitmapToDir(bitmap: Bitmap?, parentDir: String): String {
         var out: FileOutputStream? = null
         val pathName = "$parentDir/image-${UUID.randomUUID()}.png"
         try {

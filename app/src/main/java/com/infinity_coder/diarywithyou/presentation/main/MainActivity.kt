@@ -14,8 +14,8 @@ import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.DiaryFragment
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerAdapter
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.CoverRecyclerFragment
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.CoverRecyclerFragment
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListener {

@@ -1,52 +1,74 @@
 package com.infinity_coder.diarywithyou.presentation.camera
 
 import android.app.Activity
-import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import com.infinity_coder.diarywithyou.R
-import com.otaliastudios.cameraview.*
-import kotlinx.android.synthetic.main.activity_camera.*
-import android.content.Intent
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
+import com.infinity_coder.diarywithyou.R
+import com.infinity_coder.diarywithyou.presentation.CAMERA_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.IMAGE_PATH_KEY
 import com.infinity_coder.diarywithyou.presentation.toast
+import com.otaliastudios.cameraview.*
+import kotlinx.android.synthetic.main.activity_camera.*
 
-
+/**
+ * Отображает Activity для получения изображения с камеры.
+ */
 class CameraActivity: AppCompatActivity(){
 
-    lateinit var viewModel: CameraViewModel
+    private val viewModel: CameraViewModel by lazy { ViewModelProviders.of(this).get(CameraViewModel::class.java) }
+    private val maxBitmapWidth = 5000
+    private val maxBitmapHeight = 5000
+
+    // Прослушивает событие, когда фото готово к отображению
+    private val cameraListener = object : CameraListener() {
+        override fun onPictureTaken(result: PictureResult) {
+            onPicture(result)
+        }
+
+        override fun onCameraError(exception: CameraException) {
+            toast("${resources.getString(R.string.camera_exception)}${exception.reason}")
+        }
+    }
+
+    // Прослушивает событие, когда пользователь начал делать фото
+    private val capturePictureListener = View.OnClickListener {
+        if (cameraView.mode == Mode.PICTURE) {
+            toast(resources.getString(R.string.capturing_picture))
+            cameraView.takePicture()
+        }
+        else
+            toast("${resources.getString(R.string.camera_mode)}${cameraView.mode}")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
 
-        viewModel = ViewModelProviders.of(this).get(CameraViewModel::class.java)
-
-        cameraView.setLifecycleOwner(this)
-        cameraView.mode = Mode.PICTURE
-        cameraView.audio = Audio.OFF
-        cameraView.addCameraListener(object : CameraListener() {
-            override fun onCameraOpened(options: CameraOptions) {}
-
-            override fun onPictureTaken(result: PictureResult) {
-                onPicture(result)
-            }
-
-            override fun onCameraError(exception: CameraException) {
-                toast("Got CameraException #${exception.reason}")
-            }
-        })
-
+        setCameraView()
         fabCamera.setOnClickListener(capturePictureListener)
     }
 
+    /**
+     * Устанавливает конфигурацию camera view.
+     */
+    private fun setCameraView(){
+        cameraView.setLifecycleOwner(this)
+        cameraView.mode = Mode.PICTURE
+        cameraView.audio = Audio.OFF
+        cameraView.addCameraListener(cameraListener)
+    }
+
+    /**
+     * Трансформирует изображение, полученное с камеры, в Bitmap и возвращает Bitmap как резудьтат
+     * в предыдущее Activity
+     */
     private fun onPicture(result: PictureResult) {
-        result.toBitmap(1000, 1000) { bitmap ->
-            val imagePath = viewModel.saveBitmapTo(bitmap, "$filesDir")
+        result.toBitmap(maxBitmapWidth, maxBitmapHeight) { bitmap ->
+            val imagePath = viewModel.saveBitmapToDir(bitmap, "$filesDir")
             val intent = Intent()
             intent.putExtra(IMAGE_PATH_KEY, imagePath)
             setResult(Activity.RESULT_OK, intent)
@@ -54,24 +76,16 @@ class CameraActivity: AppCompatActivity(){
         }
     }
 
+    /**
+     * Получает разрешение для использования камеры. При положительном ответе пользователя открывает камеру.
+     */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if(requestCode == 16) {
+        if(requestCode == CAMERA_PERMISSION_CODE) {
             if(grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED && !cameraView.isOpened)
                 cameraView.open()
             else
                 finish()
         }
-    }
-
-
-
-    private val capturePictureListener = View.OnClickListener {
-        if (cameraView.mode == Mode.PICTURE) {
-            toast("Capturing picture...")
-            cameraView.takePicture()
-        }
-        else
-            toast("Камера в режиме ${cameraView.mode}")
     }
 }

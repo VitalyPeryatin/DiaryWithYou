@@ -6,4 +6,8 @@
     <string name="empty_document">Документ пуст</string>
     <string name="share_with">"Поделиться с помощью: "</string>
     <string name="no_app_to_open_pdf">"У Вас нет программы для просмотра файла. Путь к системному файлу: "</string>
+    <string name="diary_site">Сайт ежедневников: </string>
+    <string name="capturing_picture">Обработка изображения…</string>
+    <string name="camera_exception">Произошла ошибка камеры #</string>
+    <string name="camera_mode">Режим камеры: </string>
 </resources>
