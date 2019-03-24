@@ -14,19 +14,22 @@ interface DiaryDao {
     fun getAllChapters(): LiveData<List<DiaryChapter>>
 
     @Query("select * from diarychapter where name = :name")
-    fun getByName(name: String): DiaryChapter
+    fun getChapterByName(name: String): DiaryChapter
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertChapter(diaryChapter: DiaryChapter)
+    fun insert(diaryChapter: DiaryChapter)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertPage(diaryPage: DiaryPage)
+    fun insert(diaryPage: DiaryPage)
 
     @Delete
     fun delete(diaryChapter: DiaryChapter)
 
+    @Delete
+    fun delete(diaryPage: DiaryPage)
+
     @Query("delete from diarychapter where name = :name")
-    fun deleteByName(name: String)
+    fun deleteChapterByName(name: String)
 
     @Query("select * from diarypage where chapter = :name")
     fun getPagesByChapterNameLive(name: String): LiveData<List<DiaryPage>>

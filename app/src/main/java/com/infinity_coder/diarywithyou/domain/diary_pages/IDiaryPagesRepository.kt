@@ -7,4 +7,5 @@ interface IDiaryPagesRepository {
 
     fun getPagesByChapterNameLive(chapterName: String?): LiveData<List<DiaryPage>>?
     fun insertPage(diaryPage: DiaryPage)
+    fun deletePage(diaryPage: DiaryPage)
 }

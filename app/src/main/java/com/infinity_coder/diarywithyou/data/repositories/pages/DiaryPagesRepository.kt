@@ -1,4 +1,4 @@
-package com.infinity_coder.diarywithyou.data.repositories
+package com.infinity_coder.diarywithyou.data.repositories.pages
 
 import androidx.lifecycle.LiveData
 import com.infinity_coder.diarywithyou.App
@@ -20,7 +20,13 @@ class DiaryPagesRepository: IDiaryPagesRepository {
 
     override fun insertPage(diaryPage: DiaryPage) {
         GlobalScope.launch(Dispatchers.IO){
-            diaryDao.insertPage(diaryPage)
+            diaryDao.insert(diaryPage)
+        }
+    }
+
+    override fun deletePage(diaryPage: DiaryPage) {
+        GlobalScope.launch(Dispatchers.IO){
+            diaryDao.delete(diaryPage)
         }
     }
 }

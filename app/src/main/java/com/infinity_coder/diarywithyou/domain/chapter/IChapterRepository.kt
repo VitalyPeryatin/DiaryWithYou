@@ -4,4 +4,5 @@ import com.infinity_coder.diarywithyou.data.db.DiaryChapter
 
 interface IChapterRepository {
     fun insertChapter(diaryChapter: DiaryChapter)
+    fun deleteChapter(diaryChapter: DiaryChapter)
 }

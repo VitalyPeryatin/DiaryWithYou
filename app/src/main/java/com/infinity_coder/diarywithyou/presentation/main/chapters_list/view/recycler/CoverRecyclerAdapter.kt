@@ -15,15 +15,11 @@ import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.CoverCard
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
-import com.infinity_coder.diarywithyou.data.repositories.ChapterRepository
+import com.infinity_coder.diarywithyou.data.repositories.chapters.ChapterRepository
 import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CropSquareTransformation
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_cover.view.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -32,11 +28,9 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
     private var items = listOf<CoverCard>()
-
     private var oldFilteredItems = listOf<CoverCard>()
     private var filteredItems = MutableLiveData<List<CoverCard>>()
     private var viewWithActionBar: AppCompatActivity? = null
-    private val diaryDao = App.instance.db.diaryDao()
     private val res = App.instance.resources
     private val selectedChapters = mutableListOf<CoverCard>()
 
@@ -81,18 +75,14 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
             when(item?.itemId){
                 R.id.menu_remove -> {
-                    GlobalScope.launch {
-                        for(selectedChapter in selectedChapters) {
-                            diaryDao.delete(selectedChapter.diaryChapter!!)
-                            File(selectedChapter.diaryChapter!!.pdfPath).delete()
-                            toast(
-                                "${res.getString(R.string.chapter)} \"${selectedChapter.diaryChapter!!.name}\" ${res.getString(
-                                    R.string.deleted
-                                )}"
-                            )
-                        }
-                        mode?.finish()
+                    for(selectedChapter in selectedChapters) {
+                        chapterInteractor.deleteChapter(selectedChapter.diaryChapter!!)
+                        File(selectedChapter.diaryChapter!!.pdfPath).delete()
+                        Toast.makeText(App.instance.baseContext,
+                            "${res.getString(R.string.chapter)} \"${selectedChapter.diaryChapter!!.name}\" ${res.getString(R.string.deleted)}",
+                            Toast.LENGTH_SHORT).show()
                     }
+                    mode?.finish()
                 }
                 else -> return false
             }
@@ -162,12 +152,6 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
 
     fun removeViewWithActionBar(){
         viewWithActionBar = null
-    }
-
-    private suspend fun toast(text: String){
-        withContext(Dispatchers.Main) {
-            Toast.makeText(App.instance.baseContext, text, Toast.LENGTH_SHORT).show()
-        }
     }
 
     inner class CoverViewHolder(view: View): RecyclerView.ViewHolder(view) {

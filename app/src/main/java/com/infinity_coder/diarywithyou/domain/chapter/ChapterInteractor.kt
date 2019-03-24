@@ -6,4 +6,8 @@ class ChapterInteractor(private val chapterRepository: IChapterRepository) {
     fun insertChapter(diaryChapter: DiaryChapter) {
         chapterRepository.insertChapter(diaryChapter)
     }
+
+    fun deleteChapter(diaryChapter: DiaryChapter) {
+        chapterRepository.deleteChapter(diaryChapter)
+    }
 }

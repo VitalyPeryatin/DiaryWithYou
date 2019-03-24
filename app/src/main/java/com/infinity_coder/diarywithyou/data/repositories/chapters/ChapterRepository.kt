@@ -1,4 +1,4 @@
-package com.infinity_coder.diarywithyou.data.repositories
+package com.infinity_coder.diarywithyou.data.repositories.chapters
 
 import androidx.lifecycle.LiveData
 import com.infinity_coder.diarywithyou.App
@@ -10,6 +10,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
 class ChapterRepository: IChapterRepository {
+
     private val diaryDao = App.instance.db.diaryDao()
 
     fun getCoverCards(): LiveData<List<CoverCard>> {
@@ -18,7 +19,13 @@ class ChapterRepository: IChapterRepository {
 
     override fun insertChapter(diaryChapter: DiaryChapter) {
         GlobalScope.launch(Dispatchers.IO) {
-            diaryDao.insertChapter(diaryChapter)
+            diaryDao.insert(diaryChapter)
+        }
+    }
+
+    override fun deleteChapter(diaryChapter: DiaryChapter) {
+        GlobalScope.launch(Dispatchers.IO) {
+            diaryDao.delete(diaryChapter)
         }
     }
 }

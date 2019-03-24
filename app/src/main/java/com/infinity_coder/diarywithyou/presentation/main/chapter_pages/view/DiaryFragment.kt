@@ -45,6 +45,7 @@ class DiaryFragment: Fragment(), Searchable {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         (activity as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        adapter.addViewWithActionBar(activity as AppCompatActivity)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -92,6 +93,11 @@ class DiaryFragment: Fragment(), Searchable {
                 ).show()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        adapter.removeViewWithActionBar()
     }
 
     override fun onStart() {

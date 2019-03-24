@@ -12,4 +12,13 @@ class DiaryPagesInteractor(private val diaryPagesRepository: IDiaryPagesReposito
     fun insertPage(diaryPage: DiaryPage){
         diaryPagesRepository.insertPage(diaryPage)
     }
+
+    fun deletePage(diaryPage: DiaryPage){
+        diaryPagesRepository.deletePage(diaryPage)
+    }
+
+    fun deleteAllPage(diaryPage: List<DiaryPage>){
+        for(page in diaryPage)
+            deletePage(page)
+    }
 }
