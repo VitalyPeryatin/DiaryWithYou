@@ -3,7 +3,6 @@ package com.infinity_coder.diarywithyou.presentation.custom_ui
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.ImageView
-import kotlin.math.min
 
 /**
  * Обрезает изображение в форме квадрата.
@@ -11,7 +10,6 @@ import kotlin.math.min
 class SquareImageView(context: Context, attributeSet: AttributeSet?): ImageView(context, attributeSet) {
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        val size = min(measuredHeight, measuredWidth)
-        setMeasuredDimension(size, size)
+        setMeasuredDimension(measuredWidth, measuredWidth)
     }
 }

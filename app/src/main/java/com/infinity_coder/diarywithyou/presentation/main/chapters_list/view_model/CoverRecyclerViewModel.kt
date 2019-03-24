@@ -13,6 +13,9 @@ import com.itextpdf.text.PageSize
 
 
 class CoverRecyclerViewModel: ViewModel() {
+
+
+
     fun createPdf(pages: List<DiaryPage>, pdfPath: String): String? = runBlocking (Dispatchers.IO){
         try {
             val file = File(pdfPath)

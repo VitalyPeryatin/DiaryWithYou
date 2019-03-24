@@ -1,6 +1,8 @@
 package com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler
 
 import android.view.*
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ActionMode
@@ -26,7 +28,7 @@ import java.io.File
 
 
 class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListener: OnItemClickListener,
-                           val onShareClickListener: OnShareClickListener):
+    val onShareClickListener: OnShareClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
     private var items = listOf<CoverCard>()
@@ -35,8 +37,8 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
     private var filteredItems = MutableLiveData<List<CoverCard>>()
     private var viewWithActionBar: AppCompatActivity? = null
     private val diaryDao = App.instance.db.diaryDao()
-    private var selectedChapter: CoverCard? = null
     private val res = App.instance.resources
+    private val selectedChapters = mutableListOf<CoverCard>()
 
     private val chapterInteractor = ChapterInteractor(ChapterRepository())
 
@@ -46,7 +48,6 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             items = newItems.reversed()
             filteredItems.postValue(items)
         })
-
         filteredItems.observe(lifecycleOwner, Observer<List<CoverCard>> { newItems ->
             val coverDiffUtilCallback =
                 CoverDiffUtilCallback(
@@ -81,9 +82,15 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             when(item?.itemId){
                 R.id.menu_remove -> {
                     GlobalScope.launch {
-                        diaryDao.delete(selectedChapter?.diaryChapter!!)
-                        File(selectedChapter?.diaryChapter!!.pdfPath).delete()
-                        toast("${res.getString(R.string.chapter)} \"${selectedChapter?.diaryChapter!!.name}\" ${res.getString(R.string.deleted)}")
+                        for(selectedChapter in selectedChapters) {
+                            diaryDao.delete(selectedChapter.diaryChapter!!)
+                            File(selectedChapter.diaryChapter!!.pdfPath).delete()
+                            toast(
+                                "${res.getString(R.string.chapter)} \"${selectedChapter.diaryChapter!!.name}\" ${res.getString(
+                                    R.string.deleted
+                                )}"
+                            )
+                        }
                         mode?.finish()
                     }
                 }
@@ -93,7 +100,8 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         }
 
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-            mode?.title = "Title"
+            currentActionMode = mode
+            mode?.title = "1"
             mode?.menuInflater?.inflate(R.menu.menu_action_chapters, menu)
             return true
         }
@@ -104,7 +112,7 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
 
         override fun onDestroyActionMode(mode: ActionMode?) {
             currentActionMode = null
-            selectedChapter = null
+            selectedChapters.clear()
         }
     }
 
@@ -166,22 +174,43 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         val tvName = view.tvName!!
         val tvPageNum = view.tvPageNum!!
         val ivCover = view.ivCover!!
+        private val ivMaskSelected = view.ivMaskSelected!!
+        private val ivMaskSelectedDone = view.ivMaskSelectedDone!!
 
         init {
             view.ivShare!!.setOnClickListener {
                 onShareClickListener.onShareClick(view.tvName.text.toString())
             }
             view.setOnClickListener {
-                onItemClickListener.onItemClick(view.tvName.text.toString())
+                if(currentActionMode == null)
+                    onItemClickListener.onItemClick(view.tvName.text.toString())
+                else
+                    actionItemSelect(view)
             }
             view.setOnLongClickListener {
                 if (currentActionMode != null) { return@setOnLongClickListener false }
                     viewWithActionBar?.let {
-                        selectedChapter = filteredItems.value!![layoutPosition]
+                        actionItemSelect(view)
                         it.startSupportActionMode(modeCallback)
-                        view.isSelected = true
                     }
                         true
+            }
+        }
+
+        private fun actionItemSelect(view: View){
+            viewWithActionBar?.let {
+                if(!view.isSelected) {
+                    selectedChapters.add(filteredItems.value!![layoutPosition])
+                    ivMaskSelected.visibility = VISIBLE
+                    ivMaskSelectedDone.visibility = VISIBLE
+                }
+                else {
+                    selectedChapters.remove(filteredItems.value!![layoutPosition])
+                    ivMaskSelected.visibility = GONE
+                    ivMaskSelectedDone.visibility = GONE
+                }
+                currentActionMode?.title = selectedChapters.size.toString()
+                view.isSelected = !view.isSelected
             }
         }
     }

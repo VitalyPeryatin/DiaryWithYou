@@ -29,8 +29,6 @@ import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import android.view.animation.Animation
-import android.view.animation.AnimationUtils
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CoverRecyclerViewModel
@@ -45,16 +43,6 @@ class CoverRecyclerFragment: Fragment(),
     private lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
     private lateinit var chapterNameDialog: ChapterNameDialog
     private lateinit var viewModel: CoverRecyclerViewModel
-
-    private val animDownToTop: Animation by lazy {
-        AnimationUtils
-            .loadAnimation(context, com.infinity_coder.diarywithyou.R.anim.rotate_0_180)
-    }
-
-    private val animTopToDown: Animation by lazy {
-        AnimationUtils
-            .loadAnimation(context, com.infinity_coder.diarywithyou.R.anim.rotate_180_360)
-    }
 
     private val onScrollListener = object : RecyclerView.OnScrollListener() {
 
