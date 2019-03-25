@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 
 class DiaryPagesRepository: IDiaryPagesRepository {
 
-    private val diaryDao = App.instance.db.diaryDao()
+    private val diaryDao = App.diaryDao
 
     override fun getPagesByChapterNameLive(chapterName: String?): LiveData<List<DiaryPage>>? {
         if(chapterName != null)

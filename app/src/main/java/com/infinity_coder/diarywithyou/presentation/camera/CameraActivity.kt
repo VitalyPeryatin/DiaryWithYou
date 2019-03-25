@@ -3,6 +3,8 @@ package com.infinity_coder.diarywithyou.presentation.camera
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +15,7 @@ import com.infinity_coder.diarywithyou.presentation.IMAGE_PATH_KEY
 import com.infinity_coder.diarywithyou.presentation.toast
 import com.otaliastudios.cameraview.*
 import kotlinx.android.synthetic.main.activity_camera.*
+
 
 /**
  * Отображает Activity для получения изображения с камеры.
@@ -37,16 +40,16 @@ class CameraActivity: AppCompatActivity(){
     // Прослушивает событие, когда пользователь начал делать фото
     private val capturePictureListener = View.OnClickListener {
         if (cameraView.mode == Mode.PICTURE) {
-            toast(resources.getString(R.string.capturing_picture))
+            toast(resources.getString(com.infinity_coder.diarywithyou.R.string.capturing_picture))
             cameraView.takePicture()
         }
         else
-            toast("${resources.getString(R.string.camera_mode)}${cameraView.mode}")
+            toast("${resources.getString(com.infinity_coder.diarywithyou.R.string.camera_mode)}${cameraView.mode}")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_camera)
+        setContentView(com.infinity_coder.diarywithyou.R.layout.activity_camera)
 
         setCameraView()
         fabCamera.setOnClickListener(capturePictureListener)
@@ -68,10 +71,22 @@ class CameraActivity: AppCompatActivity(){
      */
     private fun onPicture(result: PictureResult) {
         result.toBitmap(maxBitmapWidth, maxBitmapHeight) { bitmap ->
-            val imagePath = viewModel.saveBitmapToDir(bitmap, "$filesDir")
-            val intent = Intent()
-            intent.putExtra(IMAGE_PATH_KEY, imagePath)
-            setResult(Activity.RESULT_OK, intent)
+            if(bitmap != null) {
+                val matrix = Matrix()
+                matrix.postRotate(270f)
+                val verticalBitmap = if(bitmap.width > bitmap.height)
+                    Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+                else
+                    bitmap
+
+                val imagePath = viewModel.saveBitmapToDir(verticalBitmap, "$filesDir")
+                val intent = Intent()
+                intent.putExtra(IMAGE_PATH_KEY, imagePath)
+                setResult(Activity.RESULT_OK, intent)
+            }
+            else{
+                setResult(Activity.RESULT_CANCELED, Intent())
+            }
             finish()
         }
     }

@@ -29,6 +29,7 @@ import com.infinity_coder.diarywithyou.presentation.CHAPTER_KEY
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler.PagesRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view_model.DiaryViewModel
+import com.infinity_coder.diarywithyou.utils.PdfCreator
 import kotlinx.coroutines.*
 import java.io.IOException
 
@@ -71,7 +72,7 @@ class DiaryFragment: Fragment(), Searchable {
             if(rootDir == null)
                 throw IOException()
             else
-                viewModel.createPdf(adapter.getPages(), "$rootDir/$chapterName.pdf")
+                PdfCreator.createPdf(adapter.getPages(), "$rootDir/$chapterName.pdf")
         }catch (e: IOException){ null }
         if(pdfPath == null)
             Toast.makeText(context, resources.getString(R.string.empty_document), Toast.LENGTH_SHORT).show()

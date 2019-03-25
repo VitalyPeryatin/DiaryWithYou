@@ -30,8 +30,11 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import com.infinity_coder.diarywithyou.R
+import com.infinity_coder.diarywithyou.data.repositories.chapters.ChapterRepository
+import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CoverRecyclerViewModel
+import com.infinity_coder.diarywithyou.utils.PdfCreator
 
 
 class CoverRecyclerFragment: Fragment(),
@@ -43,6 +46,8 @@ class CoverRecyclerFragment: Fragment(),
     private lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
     private lateinit var chapterNameDialog: ChapterNameDialog
     private lateinit var viewModel: CoverRecyclerViewModel
+
+    private val chapterInteractor = ChapterInteractor(ChapterRepository())
 
     private val onScrollListener = object : RecyclerView.OnScrollListener() {
 
@@ -120,36 +125,28 @@ class CoverRecyclerFragment: Fragment(),
     }
 
     override fun onShareClick(text: String) {
-        GlobalScope.launch {
-            val diaryDao = App.instance.db.diaryDao()
-            val pages = diaryDao.getPagesByChapterName(text)
-            val pdfPath = try {
-                val rootDir = App.instance.getRootDir()
-                if (rootDir == null)
-                    throw IOException()
-                else
-                    viewModel.createPdf(pages, "$rootDir/$text.pdf")
-            } catch (e: IOException) {
-                null
-            }
-            if (pdfPath == null)
-                withContext(Dispatchers.Main){
-                    context?.toast(resources.getString(R.string.empty_document))
-                }
-            else {
-                val intent = Intent(Intent.ACTION_SEND)
-
-                val apkURI = FileProvider.getUriForFile(context!!,
-                    context?.applicationContext?.packageName + ".provider", File(pdfPath))
-                intent.putExtra(Intent.EXTRA_STREAM, apkURI)
-                intent.type = "application/pdf"
-                withContext(Dispatchers.Main) {
-                    try {
-                        startActivity(Intent.createChooser(intent, resources.getString(R.string.share_with)))
-                    } catch (e: ActivityNotFoundException) {
-                        context?.toast(resources.getString(R.string.no_app_to_open_pdf) + pdfPath)
-                    }
-                }
+        val pages = chapterInteractor.getPagesByChapterName(text)
+        val pdfPath = try {
+            val rootDir = App.instance.getRootDir()
+            if (rootDir == null)
+                throw IOException()
+            else
+                PdfCreator.createPdf(pages, "$rootDir/$text.pdf")
+        } catch (e: IOException) {
+            null
+        }
+        if (pdfPath == null)
+            context?.toast(resources.getString(R.string.empty_document))
+        else {
+            val intent = Intent(Intent.ACTION_SEND)
+            val apkURI = FileProvider.getUriForFile(context!!,
+                context?.applicationContext?.packageName + ".provider", File(pdfPath))
+            intent.putExtra(Intent.EXTRA_STREAM, apkURI)
+            intent.type = "application/pdf"
+            try {
+                startActivity(Intent.createChooser(intent, resources.getString(R.string.share_with)))
+            } catch (e: ActivityNotFoundException) {
+                context?.toast(resources.getString(R.string.no_app_to_open_pdf) + pdfPath)
             }
         }
     }

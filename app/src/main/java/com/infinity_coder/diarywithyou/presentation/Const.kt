@@ -8,3 +8,5 @@ const val DIALOG_FRAGMENT_KEY = "dialog"
 const val PDF_EXT = "pdf"
 const val CAMERA_REQUEST_CODE = 1
 const val CHAPTER_KEY = "chapter"
+
+const val DIARY_DB_NAME = "DiaryDB"
