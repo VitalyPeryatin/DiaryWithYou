@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import android.net.Uri
 
 
 class CoversFragment: Fragment(),
@@ -59,11 +60,11 @@ class CoversFragment: Fragment(),
 
     private val dropDownUpListener = View.OnClickListener {
         if(isFloatPanelOpen) {
-            btnDropDownUp.animate().rotationBy(180f).rotation(0f)
+            arrowDropDownUp.animate().rotationBy(180f).rotation(0f)
             frameSiteLink.visibility = GONE
         }
         else {
-            btnDropDownUp.animate().rotation(180f)
+            arrowDropDownUp.animate().rotation(180f)
             frameSiteLink.visibility = VISIBLE
         }
         isFloatPanelOpen = !isFloatPanelOpen
@@ -88,9 +89,14 @@ class CoversFragment: Fragment(),
         recyclerCover.addOnScrollListener(onScrollListener)
 
         fabRecycler.setOnClickListener(this)
-        btnDropDownUp.setOnClickListener(dropDownUpListener)
+        btnDropDown.setOnClickListener(dropDownUpListener)
 
         frameSiteLink.visibility = GONE
+
+        tvSiteLink.setOnClickListener {
+            btnDropDown.performClick()
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(resources.getString(R.string.diary_site_link))))
+        }
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {

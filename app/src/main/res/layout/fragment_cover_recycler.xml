@@ -18,15 +18,24 @@
                 android:elevation="2dp"
                 android:background="@android:color/white">
 
-            <ImageView
-                    android:id="@+id/btnDropDownUp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_gravity="end|bottom"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="8dp"
-                    app:srcCompat="@drawable/ic_arrow_drop_down"
-                    android:contentDescription="@string/drop_down_arrow"/>
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="32dp" android:layout_weight="1" android:id="@+id/btnDropDown">
+                <FrameLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent" android:layout_weight="1">
+
+                </FrameLayout>
+                <ImageView
+                        android:id="@+id/arrowDropDownUp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="8dp"
+                        app:srcCompat="@drawable/ic_arrow_drop_down"
+                        android:contentDescription="@string/drop_down_arrow"/>
+            </LinearLayout>
             <LinearLayout
                     android:id="@+id/frameSiteLink"
                     android:orientation="horizontal"

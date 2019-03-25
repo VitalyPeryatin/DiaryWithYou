@@ -6,15 +6,15 @@
     <string name="share_with">Share with:</string>
     <string name="no_app_to_open_pdf">"You don't have a program to view the file. Path to system file: "</string>
     <string name="diary_site">Diaries\' site: </string>
-    <string name="diary_site_link" translatable="false">https://vk.com/</string>
+    <string name="diary_site_link" translatable="false">http://pmnavigator.ru/</string>
     <string name="capturing_picture">Capturing picture…</string>
     <string name="camera_exception">Got CameraException #</string>
     <string name="camera_mode">Camera mode: </string>
     <string name="chapter">Chapter</string>
     <string name="deleted">was deleted</string>
-    <string name="cover_preview">Cover Preview</string>
-    <string name="drop_down_arrow">Drop Down Arrow</string>
-    <string name="share_button">Share button</string>
-    <string name="photo">Photo</string>
-    <string name="done_icon">Done icon</string>
+    <string name="cover_preview" translatable="false">Cover Preview</string>
+    <string name="drop_down_arrow" translatable="false">Drop Down Arrow</string>
+    <string name="share_button" translatable="false">Share button</string>
+    <string name="photo" translatable="false">Photo</string>
+    <string name="done_icon" translatable="false">Done icon</string>
 </resources>
