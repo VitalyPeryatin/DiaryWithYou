@@ -23,8 +23,8 @@ import kotlinx.android.synthetic.main.activity_camera.*
 class CameraActivity: AppCompatActivity(){
 
     private val viewModel: CameraViewModel by lazy { ViewModelProviders.of(this).get(CameraViewModel::class.java) }
-    private val maxBitmapWidth = 5000
-    private val maxBitmapHeight = 5000
+    private val maxBitmapWidth = 1500
+    private val maxBitmapHeight = 1500
 
     // Прослушивает событие, когда фото готово к отображению
     private val cameraListener = object : CameraListener() {
