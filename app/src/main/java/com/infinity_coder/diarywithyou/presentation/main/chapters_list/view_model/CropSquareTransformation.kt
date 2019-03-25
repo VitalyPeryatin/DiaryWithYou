@@ -3,7 +3,10 @@ package com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_mod
 import android.graphics.Bitmap
 import com.squareup.picasso.Transformation
 
-
+/**
+ * Обрезает изображение в виде квадрата
+ * Трансформация изображения для Picasso
+ */
 class CropSquareTransformation : Transformation {
 
     private var mWidth: Int = 0

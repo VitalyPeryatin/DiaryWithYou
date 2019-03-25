@@ -25,13 +25,21 @@ import java.io.File
 
 class ChapterNameDialog: DialogFragment() {
 
+    private lateinit var etChapterName: EditText
+    private var coverPath: String? = null
+    private lateinit var chapterListener: OnChapterNameDialogListener
+
+    /**
+     * Слушатель по нажатию на кнопку "Отимена", закрывает диалоговое окно
+     */
     private val onCancelClickListener = View.OnClickListener {
         dismiss()
     }
 
-    lateinit var etChapterName: EditText
-    private var coverPath: String? = null
-
+    /**
+     * Слушатель по нажатию на кнопку "Ок". Создаёт новую главу, добавляет её в БД и создаёт новый pdf документ с
+     * соответствующим названием.
+     */
     private val onOkClickListener = View.OnClickListener {
         val name = etChapterName.text.toString()
         if(name.isNotEmpty()) {
@@ -42,38 +50,21 @@ class ChapterNameDialog: DialogFragment() {
         }
     }
 
+    /**
+     * Слушатель по нажатию на иконку выбора изображения.
+     * Откоывает галерею для выбора обложки и возвращает её в качестве результата.
+     */
     private val onCoverClickListener = View.OnClickListener {
         val i = Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         startActivityForResult(i, RESULT_LOAD_IMAGE)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && data != null) {
-            inflateImage(data.data)
-        }
-    }
-
-    private fun inflateImage(selectedImage: Uri){
-        val filePathColumn = arrayOf(MediaStore.Images.Media.DATA)
-        val cursor = activity!!.contentResolver.query(selectedImage, filePathColumn, null, null, null)
-        cursor.moveToFirst()
-        val columnIndex = cursor.getColumnIndex(filePathColumn[0])
-        val picturePath = cursor.getString(columnIndex)
-        cursor.close()
-        Picasso.get()
-            .load(File(picturePath))
-            .placeholder(R.drawable.default_cover1)
-            .transform(CropSquareTransformation())
-            .into(ivCover)
-        coverPath = picturePath
-    }
-
+    /**
+     * Слушатель добавления нового заголовка из диалогового окна
+     */
     interface OnChapterNameDialogListener{
         fun addChapter(chapter: DiaryChapter)
     }
-
-    lateinit var chapterListener: OnChapterNameDialogListener
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.dialog_chapter_name, container, false)
@@ -97,5 +88,32 @@ class ChapterNameDialog: DialogFragment() {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         etChapterName.setText("")
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && data != null) {
+            inflateImage(data.data!!)
+        }
+    }
+
+    /**
+     * Достёт изображение из галереи и устанавливает её в качестве обложки
+     */
+    private fun inflateImage(selectedImage: Uri){
+        val filePathColumn = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor = activity!!.contentResolver.query(selectedImage, filePathColumn, null, null, null)
+        cursor?.apply {
+            moveToFirst()
+            val columnIndex = getColumnIndex(filePathColumn[0])
+            val picturePath = getString(columnIndex)
+            close()
+            Picasso.get()
+                .load(File(picturePath))
+                .placeholder(R.drawable.default_cover1)
+                .transform(CropSquareTransformation())
+                .into(ivCover)
+            coverPath = picturePath
+        }
     }
 }

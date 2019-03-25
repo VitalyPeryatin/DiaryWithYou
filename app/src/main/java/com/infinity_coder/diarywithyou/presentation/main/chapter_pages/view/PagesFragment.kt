@@ -22,22 +22,19 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.core.content.FileProvider
-import androidx.lifecycle.ViewModelProviders
 import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.presentation.CAMERA_REQUEST_CODE
 import com.infinity_coder.diarywithyou.presentation.CHAPTER_KEY
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler.PagesRecyclerAdapter
-import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view_model.DiaryViewModel
 import com.infinity_coder.diarywithyou.utils.PdfCreator
 import kotlinx.coroutines.*
 import java.io.IOException
 
 
-class DiaryFragment: Fragment(), Searchable {
+class PagesFragment: Fragment(), Searchable {
     private var chapterName: String? = null
     private val adapter: PagesRecyclerAdapter by lazy { PagesRecyclerAdapter(this, chapterName) }
-    private val viewModel: DiaryViewModel by lazy { ViewModelProviders.of(this).get(DiaryViewModel::class.java) }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_diary, container, false)
@@ -66,7 +63,10 @@ class DiaryFragment: Fragment(), Searchable {
         }
     }
 
-    fun createAndOpenPdf(){
+    /**
+     * Создаёт pdf файл и открывает его через стороннее приложение
+     */
+    fun openPdf(){
         val pdfPath = try {
             val rootDir = App.instance.getRootDir()
             if(rootDir == null)
@@ -96,20 +96,10 @@ class DiaryFragment: Fragment(), Searchable {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        adapter.removeViewWithActionBar()
-    }
-
     override fun onStart() {
         super.onStart()
         (activity as MainActivity).optionsMenu.postValue(MainActivity.MenuType.PAGES)
         (activity as MainActivity).activeFragment = this
-    }
-
-    override fun onStop() {
-        super.onStop()
-        (activity as MainActivity).activeFragment = null
     }
 
     /**
@@ -119,7 +109,7 @@ class DiaryFragment: Fragment(), Searchable {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE) {
             if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
-                createAndOpenPdf()
+                openPdf()
         }
     }
 
@@ -147,9 +137,19 @@ class DiaryFragment: Fragment(), Searchable {
         adapter.filter(text)
     }
 
+    override fun onStop() {
+        super.onStop()
+        (activity as MainActivity).activeFragment = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        adapter.removeViewWithActionBar()
+    }
+
     companion object {
-        fun newInstance(text: String): DiaryFragment {
-            val fragment = DiaryFragment()
+        fun newInstance(text: String): PagesFragment {
+            val fragment = PagesFragment()
             val bundle = Bundle()
             bundle.putString(CHAPTER_KEY, text)
             fragment.arguments = bundle

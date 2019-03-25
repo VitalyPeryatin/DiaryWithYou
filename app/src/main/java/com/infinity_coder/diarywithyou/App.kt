@@ -18,6 +18,9 @@ class App: Application() {
         diaryDao = db.diaryDao()
     }
 
+    /**
+     * Возвращает путь к корневой директории, где сохраняются PDF файлы
+     */
     fun getRootDir(): String?{
         val folder = File("${Environment.getExternalStorageDirectory()}/${resources.getString(R.string.app_name)}")
         var result = true

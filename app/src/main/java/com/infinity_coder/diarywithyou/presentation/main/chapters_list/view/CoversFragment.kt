@@ -11,46 +11,44 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.infinity_coder.diarywithyou.App
+import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
+import com.infinity_coder.diarywithyou.data.repositories.chapters.ChapterRepository
+import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
 import com.infinity_coder.diarywithyou.presentation.DIALOG_FRAGMENT_KEY
 import com.infinity_coder.diarywithyou.presentation.PDF_EXT
 import com.infinity_coder.diarywithyou.presentation.main.MainActivity
 import com.infinity_coder.diarywithyou.presentation.main.Searchable
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.toast
+import com.infinity_coder.diarywithyou.utils.PdfCreator
 import com.itextpdf.text.Document
 import com.itextpdf.text.Paragraph
 import com.itextpdf.text.pdf.PdfWriter
 import kotlinx.android.synthetic.main.fragment_cover_recycler.*
-import kotlinx.coroutines.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import com.infinity_coder.diarywithyou.R
-import com.infinity_coder.diarywithyou.data.repositories.chapters.ChapterRepository
-import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CoverRecyclerViewModel
-import com.infinity_coder.diarywithyou.utils.PdfCreator
 
 
-class CoverRecyclerFragment: Fragment(),
+class CoversFragment: Fragment(),
     ChapterNameDialog.OnChapterNameDialogListener,
-    CoverRecyclerAdapter.OnItemClickListener,
+    CoverRecyclerAdapter.OnChapterClickListener,
     CoverRecyclerAdapter.OnShareClickListener, View.OnClickListener, Searchable {
 
     private lateinit var adapter: CoverRecyclerAdapter
-    private lateinit var onItemClickListener: CoverRecyclerAdapter.OnItemClickListener
+    private lateinit var onChapterClickListener: CoverRecyclerAdapter.OnChapterClickListener
     private lateinit var chapterNameDialog: ChapterNameDialog
-    private lateinit var viewModel: CoverRecyclerViewModel
-
     private val chapterInteractor = ChapterInteractor(ChapterRepository())
+    private var isFloatPanelOpen = false
 
     private val onScrollListener = object : RecyclerView.OnScrollListener() {
-
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
             if (dy > 0 && fabRecycler.isShown)
                 fabRecycler.hide()
@@ -58,8 +56,6 @@ class CoverRecyclerFragment: Fragment(),
                 fabRecycler.show()
         }
     }
-
-    private var isFloatPanelOpen = false
 
     private val dropDownUpListener = View.OnClickListener {
         if(isFloatPanelOpen) {
@@ -71,11 +67,6 @@ class CoverRecyclerFragment: Fragment(),
             frameSiteLink.visibility = VISIBLE
         }
         isFloatPanelOpen = !isFloatPanelOpen
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(CoverRecyclerViewModel::class.java)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -108,22 +99,16 @@ class CoverRecyclerFragment: Fragment(),
         (activity as AppCompatActivity).supportActionBar?.setDisplayHomeAsUpEnabled(false)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        adapter.removeViewWithActionBar()
-    }
-
     override fun onStart() {
         super.onStart()
         (activity as MainActivity).optionsMenu.postValue(MainActivity.MenuType.CHAPTERS)
         (activity as MainActivity).activeFragment = this
     }
 
-    override fun onStop() {
-        super.onStop()
-        (activity as MainActivity).activeFragment = null
-    }
-
+    /**
+     * Создаёт pdf документ из имеющихся страниц в главе и предоставляет возможность поделиться
+     * pdf документом через другие приложения
+     */
     override fun onShareClick(text: String) {
         val pages = chapterInteractor.getPagesByChapterName(text)
         val pdfPath = try {
@@ -160,18 +145,21 @@ class CoverRecyclerFragment: Fragment(),
         }
     }
 
+    /**
+     * Добавляет новую главу в список и в БД
+     */
     override fun addChapter(chapter: DiaryChapter) {
         adapter.addChapter(chapter)
-        if(adapter.getData().isNotEmpty()) {
+        if(adapter.getCovers().isNotEmpty()) {
             GlobalScope.launch {
                 delay(800)
                 recyclerCover.smoothScrollToPosition(0)
             }
         }
-        createPdf(chapter)
+        createEmptyPdf(chapter)
     }
 
-    private fun createPdf(chapter: DiaryChapter){
+    private fun createEmptyPdf(chapter: DiaryChapter){
         val pathName = "${context!!.filesDir}/${chapter.name}.$PDF_EXT"
         chapter.pdfPath = pathName
         val document = Document()
@@ -181,18 +169,34 @@ class CoverRecyclerFragment: Fragment(),
         document.close()
     }
 
+    /**
+     * Фильтрует список по введённому пользователем названием главы
+     */
     override fun searchByDate(text: String) {
         adapter.filter(text)
     }
 
-    override fun onItemClick(text: String) {
-        onItemClickListener.onItemClick(text)
+    /**
+     * Открывает фрагмент со страницами выбранной главы.
+     */
+    override fun onChapterClick(text: String) {
+        onChapterClickListener.onChapterClick(text)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        (activity as MainActivity).activeFragment = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        adapter.removeViewWithActionBar()
     }
 
     companion object {
-        fun newInstance(onItemClickListener: CoverRecyclerAdapter.OnItemClickListener): CoverRecyclerFragment {
-            val fragment = CoverRecyclerFragment()
-            fragment.onItemClickListener = onItemClickListener
+        fun newInstance(onChapterClickListener: CoverRecyclerAdapter.OnChapterClickListener): CoversFragment {
+            val fragment = CoversFragment()
+            fragment.onChapterClickListener = onChapterClickListener
             return fragment
         }
     }

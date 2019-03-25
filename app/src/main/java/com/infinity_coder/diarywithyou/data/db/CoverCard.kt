@@ -1,7 +1,5 @@
 package com.infinity_coder.diarywithyou.data.db
 
-import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Relation
 

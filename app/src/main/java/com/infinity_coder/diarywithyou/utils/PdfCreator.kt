@@ -8,6 +8,9 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.FileOutputStream
 
+/**
+ * Создаёт PDF файл
+ */
 object PdfCreator {
     fun createPdf(pages: List<DiaryPage>, pdfPath: String): String? = runBlocking (Dispatchers.IO){
         try {

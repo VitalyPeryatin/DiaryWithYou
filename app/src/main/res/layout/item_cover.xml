@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-                                   xmlns:app="http://schemas.android.com/apk/res-auto"
-                                   xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
-                                   android:layout_height="wrap_content" app:cardElevation="4dp"
-                                   app:cardCornerRadius="4dp" android:layout_margin="8dp"
->
+<androidx.cardview.widget.CardView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -13,17 +16,21 @@
         <com.infinity_coder.diarywithyou.presentation.custom_ui.SquareImageView
                 android:layout_width="0dp"
                 android:id="@+id/ivCover"
-                app:layout_constraintTop_toTopOf="parent" app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" android:layout_height="0dp"
-                android:visibility="visible"/>
+                android:layout_height="0dp"
+                android:visibility="visible"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
         <com.infinity_coder.diarywithyou.presentation.custom_ui.SquareImageView
                 android:layout_width="0dp"
                 android:id="@+id/ivMaskSelected"
-                app:layout_constraintTop_toTopOf="parent" app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent" android:layout_height="0dp"
+                android:layout_height="0dp"
                 android:background="@color/transparent_light_black"
                 android:layout_gravity="center"
-                android:visibility="gone"/>
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"/>
         <ImageView
                 android:layout_width="0dp"
                 android:id="@+id/ivMaskSelectedDone"
@@ -38,35 +45,49 @@
                 app:layout_constraintStart_toStartOf="parent"/>
         <TextView
                 android:id="@+id/tvName"
-                android:text="Text"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
                 android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:fontFamily="serif"
                 android:background="@drawable/mask_title"
+                android:padding="8dp"
+                android:elevation="2dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintBottom_toBottomOf="@+id/ivCover"
-                android:padding="8dp"
-                android:elevation="2dp"/>
+                tools:text="Text"/>
         <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp" app:srcCompat="@drawable/ic_share"
                 android:id="@+id/ivShare"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="8dp"
+                android:layout_marginTop="8dp"
+                android:contentDescription="@string/share_button"
+                app:srcCompat="@drawable/ic_share"
                 app:layout_constraintStart_toStartOf="parent"
-                android:layout_marginStart="8dp" android:layout_marginBottom="8dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                android:layout_marginTop="8dp" app:layout_constraintTop_toBottomOf="@+id/ivCover"/>
+                app:layout_constraintTop_toBottomOf="@+id/ivCover"
+                app:layout_constraintBottom_toBottomOf="parent"/>
         <TextView
+                android:id="@+id/tvPageNum"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:id="@+id/tvPageNum" android:layout_marginBottom="8dp"
-                app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
-                android:layout_marginEnd="8dp" android:layout_marginTop="8dp"
-                app:layout_constraintTop_toBottomOf="@+id/tvName" android:textColor="@color/colorAccent"
-                android:fontFamily="serif" android:textSize="16sp" android:text="25"
-                android:background="@drawable/bgd_text_page" android:paddingTop="2dp" android:paddingStart="8dp"
-                android:paddingEnd="8dp" android:paddingBottom="2dp"/>
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/colorAccent"
+                android:fontFamily="serif"
+                android:textSize="16sp"
+                android:background="@drawable/bgd_text_page"
+                android:paddingTop="2dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvName"
+                tools:text="25"/>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

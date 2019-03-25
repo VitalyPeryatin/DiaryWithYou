@@ -29,6 +29,7 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
     private var viewWithActionBar: AppCompatActivity? = null
 
     private val selectedPages = mutableListOf<DiaryPage>()
+    private val selectedViews = mutableListOf<PagesViewHolder>()
 
     private val diaryPagesInteractor =
         DiaryPagesInteractor(DiaryPagesRepository())
@@ -48,6 +49,7 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
         })
     }
 
+    // Устанавливает контекстное меню действий
     private var currentActionMode: ActionMode? = null
     private val modeCallback: ActionMode.Callback = object: ActionMode.Callback{
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
@@ -75,6 +77,11 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
         override fun onDestroyActionMode(mode: ActionMode?) {
             currentActionMode = null
             selectedPages.clear()
+            for(view in selectedViews) {
+                view.frameMask.visibility = View.GONE
+                view.ivMaskDone.visibility = View.GONE
+            }
+            selectedViews.clear()
         }
     }
 
@@ -100,19 +107,24 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
         })
     }
 
+    /**
+     * Добавляет activity, у которое имеется action bar
+     */
     fun addViewWithActionBar(view: AppCompatActivity?){
-        viewWithActionBar = view
+        if(view != null && view.supportActionBar != null)
+            viewWithActionBar = view
     }
 
+    /**
+     * Удаляет activity, у которое имеется action bar
+     */
     fun removeViewWithActionBar(){
         viewWithActionBar = null
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PagesViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_page, parent, false)
-        return PagesViewHolder(
-            view
-        )
+        return PagesViewHolder(view)
     }
 
     override fun getItemCount(): Int = oldFilteredPages.size
@@ -128,8 +140,8 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
     inner class PagesViewHolder(view: View): RecyclerView.ViewHolder(view) {
         val photo = view.photo!!
         val tvDate = view.tvDate!!
-        private val frameMask = view.frameMask!!
-        private val ivMaskDone = view.ivMaskDone!!
+        val frameMask = view.frameMask!!
+        val ivMaskDone = view.ivMaskDone!!
 
         init {
             view.setOnLongClickListener {
@@ -151,11 +163,13 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
             viewWithActionBar?.let {
                 if(!view.isSelected) {
                     selectedPages.add(filteredPagesLive.value!![layoutPosition])
+                    selectedViews.add(this)
                     frameMask.visibility = View.VISIBLE
                     ivMaskDone.visibility = View.VISIBLE
                 }
                 else {
                     selectedPages.remove(filteredPagesLive.value!![layoutPosition])
+                    selectedViews.remove(this)
                     frameMask.visibility = View.GONE
                     ivMaskDone.visibility = View.GONE
                 }

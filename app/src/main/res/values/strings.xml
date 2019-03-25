@@ -12,4 +12,9 @@
     <string name="camera_mode">Camera mode: </string>
     <string name="chapter">Chapter</string>
     <string name="deleted">was deleted</string>
+    <string name="cover_preview">Cover Preview</string>
+    <string name="drop_down_arrow">Drop Down Arrow</string>
+    <string name="share_button">Share button</string>
+    <string name="photo">Photo</string>
+    <string name="done_icon">Done icon</string>
 </resources>

@@ -12,17 +12,20 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
-import com.infinity_coder.diarywithyou.presentation.isPermisssionsGranted
-import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.DiaryFragment
+import com.infinity_coder.diarywithyou.presentation.isPermissionsGranted
+import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.PagesFragment
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
-import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.CoverRecyclerFragment
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.CoversFragment
 import kotlinx.android.synthetic.main.activity_main.*
 
-class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListener {
+/**
+ * Основной экран, содержащий в себе все фрагменты по работе с ежедневником
+ */
+class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnChapterClickListener {
 
     var activeFragment: Fragment? = null
     val optionsMenu = MutableLiveData<MenuType>()
-    private lateinit var diaryRecyclerFragment: CoverRecyclerFragment
+    private lateinit var diaryRecyclerFragment: CoversFragment
     private lateinit var searchView: SearchView
     enum class MenuType{CHAPTERS, PAGES}
 
@@ -31,21 +34,23 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        diaryRecyclerFragment = CoverRecyclerFragment.newInstance(this)
+        // Устанавливает начальный фрагмент на основной экран
+        diaryRecyclerFragment = CoversFragment.newInstance(this)
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_place, diaryRecyclerFragment)
             .commit()
+
         optionsMenu.observe(this, Observer<MenuType>{
             invalidateOptionsMenu()
         })
     }
 
-    override fun onItemClick(text: String) {
+    /**
+     * Перезодит на новый фрагмент со страницами выбранной главы
+     */
+    override fun onChapterClick(text: String) {
         supportFragmentManager.beginTransaction()
-            .replace(
-                R.id.fragment_place,
-                DiaryFragment.newInstance(text)
-            )
+            .replace(R.id.fragment_place, PagesFragment.newInstance(text))
             .addToBackStack(null)
             .commit()
         closeSearchView()
@@ -86,8 +91,8 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when(item?.itemId){
             R.id.app_bar_pdf -> {
-                if(activeFragment is DiaryFragment){
-                    (activeFragment as DiaryFragment).createAndOpenPdf()
+                if(activeFragment is PagesFragment){
+                    (activeFragment as PagesFragment).openPdf()
                 }
             }
             android.R.id.home -> onBackPressed()
@@ -95,12 +100,18 @@ class MainActivity : AppCompatActivity(), CoverRecyclerAdapter.OnItemClickListen
         return true
     }
 
-    fun requestPermissionsIfNeed(){
+    /**
+     * Запрашивает разрешение на использовагние внешней памяти, если они необходимы
+     */
+    private fun requestPermissionsIfNeed(){
         val permissions = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        if(!isPermisssionsGranted(permissions))
+        if(!isPermissionsGranted(permissions))
             ActivityCompat.requestPermissions(this, permissions, EXTERNAL_STORAGE_PERMISSION_CODE)
     }
 
+    /**
+     * Проверяет предоставлены ли разрешения на использовагнгие внешней памяти
+     */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE){
             requestPermissionsIfNeed()

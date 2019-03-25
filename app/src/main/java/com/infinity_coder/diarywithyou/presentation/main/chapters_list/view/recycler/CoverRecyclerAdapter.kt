@@ -23,8 +23,8 @@ import kotlinx.android.synthetic.main.item_cover.view.*
 import java.io.File
 
 
-class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListener: OnItemClickListener,
-    val onShareClickListener: OnShareClickListener):
+class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickListener: OnChapterClickListener,
+                           val onShareClickListener: OnShareClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
     private var items = listOf<CoverCard>()
@@ -33,7 +33,7 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
     private var viewWithActionBar: AppCompatActivity? = null
     private val res = App.instance.resources
     private val selectedChapters = mutableListOf<CoverCard>()
-
+    private val selectedViews = mutableListOf<CoverViewHolder>()
     private val chapterInteractor = ChapterInteractor(ChapterRepository())
 
     init {
@@ -54,22 +54,33 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         })
     }
 
-    fun getData(): List<CoverCard>{
+    /**
+     * Интерфейс для прослушивания нажатий на обложки ежедневников
+     */
+    interface OnChapterClickListener{ fun onChapterClick(text: String) }
+
+    /**
+     * Интерфейс для прослушивания нажатий на кнопку "Поделиться"
+     */
+    interface OnShareClickListener{ fun onShareClick(text: String) }
+
+    /**
+     * Получает список обложек
+     */
+    fun getCovers(): List<CoverCard>{
         return oldFilteredItems
     }
 
-    interface OnItemClickListener{
-        fun onItemClick(text: String)
-    }
-
-    interface OnShareClickListener{
-        fun onShareClick(text: String)
-    }
-
+    /**
+     * Добавляет главу ежедневника в БД и список
+     */
     fun addChapter(diaryChapter: DiaryChapter){
         chapterInteractor.insertChapter(diaryChapter)
     }
 
+    /**
+     * Работа с контекстным меню действий, здесь реализуется удаление элементов
+     */
     private var currentActionMode: ActionMode? = null
     private val modeCallback: ActionMode.Callback = object: ActionMode.Callback{
         override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
@@ -89,6 +100,9 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             return true
         }
 
+        /**
+         * Инициализирует контекстное меню и присваивает заголовку "1" - кол-во выбранных элементов
+         */
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
             currentActionMode = mode
             mode?.title = "1"
@@ -100,12 +114,23 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             return false
         }
 
+        /**
+         * Убирает контестное меню и очищает выбранные элементы
+         */
         override fun onDestroyActionMode(mode: ActionMode?) {
             currentActionMode = null
             selectedChapters.clear()
+            for(view in selectedViews) {
+                view.ivMaskSelected.visibility = GONE
+                view.ivMaskSelectedDone.visibility = GONE
+            }
+            selectedViews.clear()
         }
     }
 
+    /**
+     * Фильтрует элементы по названию глав ежедневника
+     */
     fun filter(text: String){
         filteredItems.postValue(items.filter {
                 s -> text.toLowerCase() in s.diaryChapter!!.name.toLowerCase()
@@ -124,32 +149,32 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             holder.tvName.text = items[position].diaryChapter!!.name
             holder.tvPageNum.text = items[position].getPagesSize().toString()
             val coverPath = items[position].diaryChapter!!.coverPath
-            if(coverPath == null){
-                Picasso.get()
-                    .load(R.drawable.default_cover1)
-                    .transform(CropSquareTransformation())
-                    .placeholder(R.drawable.image_placeholder)
-                    .fit()
-                    .noFade()
-                    .centerCrop()
-                    .into(holder.ivCover)
-            }else{
-                Picasso.get()
-                    .load(File(coverPath))
-                    .transform(CropSquareTransformation())
-                    .placeholder(R.drawable.image_placeholder)
-                    .fit()
-                    .noFade()
-                    .centerCrop()
-                    .into(holder.ivCover)
-            }
+
+            val picasso = if(coverPath == null)
+                Picasso.get().load(R.drawable.default_cover1)
+            else
+                Picasso.get().load(File(coverPath))
+
+            picasso.transform(CropSquareTransformation())
+                .placeholder(R.drawable.image_placeholder)
+                .fit()
+                .noFade()
+                .centerCrop()
+                .into(holder.ivCover)
         }
     }
 
+    /**
+     * Утсанавливает Activity, у которого есть ActionBar для открытия контекстного меню действий
+     */
     fun addViewWithActionBar(view: AppCompatActivity?){
-        viewWithActionBar = view
+        if(view != null && view.supportActionBar != null)
+            viewWithActionBar = view
     }
 
+    /**
+     * Удаляет Activity, у которого есть ActionBar для открытия контекстного меню действий
+     */
     fun removeViewWithActionBar(){
         viewWithActionBar = null
     }
@@ -158,8 +183,8 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
         val tvName = view.tvName!!
         val tvPageNum = view.tvPageNum!!
         val ivCover = view.ivCover!!
-        private val ivMaskSelected = view.ivMaskSelected!!
-        private val ivMaskSelectedDone = view.ivMaskSelectedDone!!
+        val ivMaskSelected = view.ivMaskSelected!!
+        val ivMaskSelectedDone = view.ivMaskSelectedDone!!
 
         init {
             view.ivShare!!.setOnClickListener {
@@ -167,29 +192,36 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onItemClickListen
             }
             view.setOnClickListener {
                 if(currentActionMode == null)
-                    onItemClickListener.onItemClick(view.tvName.text.toString())
+                    onChapterClickListener.onChapterClick(view.tvName.text.toString())
                 else
                     actionItemSelect(view)
             }
             view.setOnLongClickListener {
                 if (currentActionMode != null) { return@setOnLongClickListener false }
-                    viewWithActionBar?.let {
+                    viewWithActionBar?.let { activity ->
                         actionItemSelect(view)
-                        it.startSupportActionMode(modeCallback)
+                        activity.startSupportActionMode(modeCallback)
                     }
                         true
             }
         }
 
+        /**
+         * Добавляет выбранный элемент в список выбранных элементов и
+         * графически показывает, что элемент выбран
+         * @param view элемент, который выбрали
+         */
         private fun actionItemSelect(view: View){
             viewWithActionBar?.let {
                 if(!view.isSelected) {
                     selectedChapters.add(filteredItems.value!![layoutPosition])
+                    selectedViews.add(this)
                     ivMaskSelected.visibility = VISIBLE
                     ivMaskSelectedDone.visibility = VISIBLE
                 }
                 else {
                     selectedChapters.remove(filteredItems.value!![layoutPosition])
+                    selectedViews.remove(this)
                     ivMaskSelected.visibility = GONE
                     ivMaskSelectedDone.visibility = GONE
                 }
