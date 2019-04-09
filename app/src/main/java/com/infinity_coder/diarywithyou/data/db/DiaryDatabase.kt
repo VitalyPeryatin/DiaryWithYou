@@ -9,7 +9,7 @@ import androidx.room.migration.Migration
 
 
 
-@Database(entities = [DiaryChapter::class, DiaryPage::class], version = 2)
+@Database(entities = [DiaryChapter::class, DiaryPage::class], version = 3)
 abstract class DiaryDatabase : RoomDatabase() {
     abstract fun diaryDao(): DiaryDao
 
@@ -18,6 +18,14 @@ abstract class DiaryDatabase : RoomDatabase() {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("DROP TABLE IF EXISTS  DiaryChapter")
                 database.execSQL("CREATE TABLE DiaryChapter (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, pdfPath TEXT NOT NULL, coverPath TEXT)")
+            }
+        }
+
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("DROP TABLE IF EXISTS  DiaryChapter")
+                database.execSQL("CREATE TABLE DiaryChapter (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, pdfPath TEXT NOT NULL, coverPath TEXT)")
+                database.execSQL("CREATE UNIQUE INDEX index_DiaryChapter_name ON DiaryChapter (name)")
             }
         }
     }

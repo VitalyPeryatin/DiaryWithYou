@@ -88,7 +88,10 @@ class CameraActivity: AppCompatActivity(){
             if(bitmap != null) {
                 val matrix = Matrix()
                 // Переворачивает изображение в вертикальное плоложение
-                matrix.postRotate(((orientation - 180f) * abs(sin(orientation * PI / 180))).toFloat())
+                if(orientation == 90 || orientation == 270)
+                    matrix.postRotate(orientation - 180f)
+                else(orientation == 180)
+                    matrix.postRotate(orientation - 0f)
                 val verticalBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 
                 val imagePath = viewModel.saveBitmapToDir(verticalBitmap, "$filesDir")

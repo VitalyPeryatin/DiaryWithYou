@@ -15,6 +15,7 @@ class App: Application() {
         instance = this
         val db = Room.databaseBuilder(this, DiaryDatabase::class.java, DIARY_DB_NAME)
             .addMigrations(DiaryDatabase.MIGRATION_1_2)
+            .addMigrations(DiaryDatabase.MIGRATION_2_3)
             .build()
         diaryDao = db.diaryDao()
     }
