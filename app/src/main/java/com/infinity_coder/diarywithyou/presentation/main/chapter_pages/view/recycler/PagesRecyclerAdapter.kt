@@ -12,6 +12,7 @@ import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.DiaryPage
 import com.infinity_coder.diarywithyou.data.repositories.pages.DiaryPagesRepository
 import com.infinity_coder.diarywithyou.domain.diary_pages.DiaryPagesInteractor
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.ICoverEditor
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_page.view.*
 import java.io.File
@@ -66,7 +67,7 @@ class PagesRecyclerAdapter(lifecycleOwner: LifecycleOwner, chapterName: String?)
         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
             currentActionMode = mode
             mode?.title = "1"
-            mode?.menuInflater?.inflate(R.menu.menu_action_chapters, menu)
+            mode?.menuInflater?.inflate(R.menu.menu_action_pages, menu)
             return true
         }
 

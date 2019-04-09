@@ -12,4 +12,7 @@
     <string name="camera_mode">Режим камеры: </string>
     <string name="chapter">Глава</string>
     <string name="deleted">была удалена</string>
+    <string name="permission_storage_rationale">Разрешение необходимо для сохранения ежедневников в PDF файлы на Вашем устройстве</string>
+    <string name="permission_camera_rationale">Разрешение необходимо для создания фото для ежедневника</string>
+    <string name="settings">Настройки</string>
 </resources>

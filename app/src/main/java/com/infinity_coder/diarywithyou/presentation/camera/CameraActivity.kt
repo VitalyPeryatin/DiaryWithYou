@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
@@ -15,6 +16,9 @@ import com.infinity_coder.diarywithyou.presentation.IMAGE_PATH_KEY
 import com.infinity_coder.diarywithyou.presentation.toast
 import com.otaliastudios.cameraview.*
 import kotlinx.android.synthetic.main.activity_camera.*
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.sin
 
 
 /**
@@ -25,6 +29,7 @@ class CameraActivity: AppCompatActivity(){
     private val viewModel: CameraViewModel by lazy { ViewModelProviders.of(this).get(CameraViewModel::class.java) }
     private val maxBitmapWidth = 1500
     private val maxBitmapHeight = 1500
+    private var orientation = 0
 
     // Прослушивает событие, когда фото готово к отображению
     private val cameraListener = object : CameraListener() {
@@ -34,6 +39,15 @@ class CameraActivity: AppCompatActivity(){
 
         override fun onCameraError(exception: CameraException) {
             toast("${resources.getString(R.string.camera_exception)}${exception.reason}")
+        }
+
+        override fun onOrientationChanged(orientation: Int) {
+            this@CameraActivity.orientation = orientation
+            Log.d("mLog", orientation.toString())
+            if(orientation % 180 == 0)
+                fabCamera.rotation = orientation.toFloat()
+            else
+                fabCamera.rotation = orientation - 180f
         }
     }
 
@@ -73,11 +87,9 @@ class CameraActivity: AppCompatActivity(){
         result.toBitmap(maxBitmapWidth, maxBitmapHeight) { bitmap ->
             if(bitmap != null) {
                 val matrix = Matrix()
-                matrix.postRotate(270f)
-                val verticalBitmap = if(bitmap.width > bitmap.height)
-                    Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                else
-                    bitmap
+                // Переворачивает изображение в вертикальное плоложение
+                matrix.postRotate(((orientation - 180f) * abs(sin(orientation * PI / 180))).toFloat())
+                val verticalBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
 
                 val imagePath = viewModel.saveBitmapToDir(verticalBitmap, "$filesDir")
                 val intent = Intent()
@@ -99,8 +111,9 @@ class CameraActivity: AppCompatActivity(){
         if(requestCode == CAMERA_PERMISSION_CODE) {
             if(grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED && !cameraView.isOpened)
                 cameraView.open()
-            else
+            else {
                 finish()
+            }
         }
     }
 }

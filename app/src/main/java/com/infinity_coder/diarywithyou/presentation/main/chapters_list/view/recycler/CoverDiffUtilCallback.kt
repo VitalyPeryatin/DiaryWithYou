@@ -11,9 +11,10 @@ class CoverDiffUtilCallback(private val oldList: List<CoverCard>,
     override fun getNewListSize(): Int = newList.size
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
-        oldList[oldItemPosition].diaryChapter!!.name == newList[newItemPosition].diaryChapter!!.name
+        oldList[oldItemPosition].diaryChapter!!.id == newList[newItemPosition].diaryChapter!!.id
 
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+            oldList[oldItemPosition].diaryChapter!!.name == newList[newItemPosition].diaryChapter!!.name &&
             oldList[oldItemPosition].diaryChapter!!.pdfPath == newList[newItemPosition].diaryChapter!!.pdfPath &&
             oldList[oldItemPosition].diaryChapter!!.coverPath == newList[newItemPosition].diaryChapter!!.coverPath
 }

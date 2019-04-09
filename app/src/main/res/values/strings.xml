@@ -17,4 +17,7 @@
     <string name="share_button" translatable="false">Share button</string>
     <string name="photo" translatable="false">Photo</string>
     <string name="done_icon" translatable="false">Done icon</string>
+    <string name="permission_storage_rationale">This permission need to save your diary to PDF files</string>
+    <string name="permission_camera_rationale">This permission need to take picture</string>
+    <string name="settings">Settings</string>
 </resources>

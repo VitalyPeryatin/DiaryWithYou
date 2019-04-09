@@ -9,5 +9,5 @@ data class DiaryPage(
     var imagePath: String,
     var date: String){
     @PrimaryKey(autoGenerate = true)
-    var id: Long = 0
+    var id: Int = 0
 }

@@ -13,10 +13,15 @@ import android.widget.EditText
 import androidx.appcompat.widget.ListPopupWindow.MATCH_PARENT
 import androidx.appcompat.widget.ListPopupWindow.WRAP_CONTENT
 import androidx.fragment.app.DialogFragment
+import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
+import com.infinity_coder.diarywithyou.presentation.COVER_NAME_KEY
+import com.infinity_coder.diarywithyou.presentation.MODE_KEY
 import com.infinity_coder.diarywithyou.presentation.RESULT_LOAD_IMAGE
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.recycler.CoverRecyclerAdapter
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CropSquareTransformation
+import com.infinity_coder.diarywithyou.presentation.toast
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.dialog_chapter_name.*
 import kotlinx.android.synthetic.main.dialog_chapter_name.view.*
@@ -25,9 +30,15 @@ import java.io.File
 
 class ChapterNameDialog: DialogFragment() {
 
+    enum class Mode {CREATE, EDIT}
     private lateinit var etChapterName: EditText
     private var coverPath: String? = null
     private lateinit var chapterListener: OnChapterNameDialogListener
+
+    private var mode = Mode.CREATE
+    private var editChapterName: String? = null
+    private lateinit var editChapter: DiaryChapter
+
 
     /**
      * Слушатель по нажатию на кнопку "Отимена", закрывает диалоговое окно
@@ -43,10 +54,21 @@ class ChapterNameDialog: DialogFragment() {
     private val onOkClickListener = View.OnClickListener {
         val name = etChapterName.text.toString()
         if(name.isNotEmpty()) {
-            val diaryChapter =
-                DiaryChapter(name, "${context!!.filesDir}/$name.pdf", coverPath)
-            chapterListener.addChapter(diaryChapter)
-            dismiss()
+            if(mode == Mode.CREATE) {
+                val diaryChapter =
+                    DiaryChapter(name, "${context!!.filesDir}/$name.pdf", coverPath)
+                chapterListener.addChapter(diaryChapter)
+                dismiss()
+            }
+            else if(mode == Mode.EDIT && editChapterName != null){
+                val file = File("${context!!.filesDir}/${editChapter.name}.pdf")
+                file.renameTo(File("${context!!.filesDir}/$name.pdf"))
+                editChapter.name = name
+                if(coverPath != null && coverPath != editChapter.coverPath)
+                    editChapter.coverPath = coverPath
+                chapterListener.updateChapter(editChapter)
+                dismiss()
+            }
         }
     }
 
@@ -64,11 +86,16 @@ class ChapterNameDialog: DialogFragment() {
      */
     interface OnChapterNameDialogListener{
         fun addChapter(chapter: DiaryChapter)
+        fun updateChapter(chapter: DiaryChapter)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val view = inflater.inflate(R.layout.dialog_chapter_name, container, false)
         etChapterName = view.etChapterName
+
+        val modeName = arguments!!.getString(MODE_KEY, Mode.CREATE.name)
+        mode = Mode.valueOf(modeName)
+
         view.btnOk.setOnClickListener(onOkClickListener)
         view.btnCancel.setOnClickListener(onCancelClickListener)
         view.ivCover.setOnClickListener(onCoverClickListener)
@@ -80,9 +107,27 @@ class ChapterNameDialog: DialogFragment() {
         dialog!!.window!!.setLayout(MATCH_PARENT, WRAP_CONTENT)
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        if(mode == Mode.EDIT) {
+            editChapterName = editChapter.name
+            if(editChapterName != null)
+                view.etChapterName.setText(editChapterName)
+            if(editChapter.coverPath != null && File(editChapter.coverPath).exists()) {
+                Picasso.get().load(File(editChapter.coverPath))
+                    .transform(CropSquareTransformation())
+                    .placeholder(R.drawable.image_placeholder)
+                    .fit()
+                    .noFade()
+                    .centerCrop()
+                    .noFade()
+                    .into(view.ivCover)
+            }
+        }
+    }
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        chapterListener = (parentFragment as OnChapterNameDialogListener)
     }
 
     override fun onDismiss(dialog: DialogInterface) {
@@ -114,6 +159,27 @@ class ChapterNameDialog: DialogFragment() {
                 .transform(CropSquareTransformation())
                 .into(ivCover)
             coverPath = picturePath
+        }
+    }
+
+    companion object {
+        fun newInstance(chapterClickListener: ChapterNameDialog.OnChapterNameDialogListener): ChapterNameDialog{
+            val fragment = ChapterNameDialog()
+            val bundle = Bundle()
+            bundle.putString(MODE_KEY, Mode.CREATE.toString())
+            fragment.arguments = bundle
+            fragment.chapterListener = chapterClickListener
+            return fragment
+        }
+
+        fun newInstance(chapterClickListener: ChapterNameDialog.OnChapterNameDialogListener, chapter: DiaryChapter): ChapterNameDialog{
+            val fragment = ChapterNameDialog()
+            fragment.editChapter = chapter
+            val bundle = Bundle()
+            bundle.putString(MODE_KEY, Mode.EDIT.toString())
+            fragment.arguments = bundle
+            fragment.chapterListener = chapterClickListener
+            return fragment
         }
     }
 }

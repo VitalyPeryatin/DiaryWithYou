@@ -5,8 +5,10 @@ import androidx.room.PrimaryKey
 
 @Entity
 data class DiaryChapter(
-    @PrimaryKey
     var name: String,
     var pdfPath: String,
     var coverPath: String?
-)
+){
+    @PrimaryKey(autoGenerate = true)
+    var id: Long = 0
+}

@@ -31,6 +31,12 @@ class ChapterRepository: IChapterRepository {
         }
     }
 
+    override fun updateChapter(diaryChapter: DiaryChapter) {
+        GlobalScope.launch(Dispatchers.IO) {
+            diaryDao.update(diaryChapter)
+        }
+    }
+
     override fun getPagesByChapterName(text: String): List<DiaryPage> = runBlocking(Dispatchers.IO) {
         return@runBlocking diaryDao.getPagesByChapterName(text)
     }

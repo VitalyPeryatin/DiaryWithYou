@@ -2,6 +2,7 @@ package com.infinity_coder.diarywithyou.data
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
+import androidx.room.OnConflictStrategy.REPLACE
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
 import com.infinity_coder.diarywithyou.data.db.DiaryPage
 import androidx.room.Transaction
@@ -24,6 +25,9 @@ interface DiaryDao {
 
     @Delete
     fun delete(diaryChapter: DiaryChapter)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    fun update(diaryChapter: DiaryChapter)
 
     @Delete
     fun delete(diaryPage: DiaryPage)

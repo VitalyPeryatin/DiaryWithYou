@@ -17,13 +17,15 @@ import com.infinity_coder.diarywithyou.data.db.CoverCard
 import com.infinity_coder.diarywithyou.data.db.DiaryChapter
 import com.infinity_coder.diarywithyou.data.repositories.chapters.ChapterRepository
 import com.infinity_coder.diarywithyou.domain.chapter.ChapterInteractor
+import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view.ICoverEditor
 import com.infinity_coder.diarywithyou.presentation.main.chapters_list.view_model.CropSquareTransformation
+import com.infinity_coder.diarywithyou.presentation.toast
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.item_cover.view.*
 import java.io.File
 
 
-class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickListener: OnChapterClickListener,
+class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val coverEditor: ICoverEditor, val onChapterClickListener: OnChapterClickListener,
                            val onShareClickListener: OnShareClickListener):
     RecyclerView.Adapter<CoverRecyclerAdapter.CoverViewHolder>(){
 
@@ -33,13 +35,15 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickLis
     private var viewWithActionBar: AppCompatActivity? = null
     private val res = App.instance.resources
     private val selectedChapters = mutableListOf<CoverCard>()
-    private val selectedViews = mutableListOf<CoverViewHolder>()
+    private val selectedViewHolders = mutableListOf<CoverViewHolder>()
     private val chapterInteractor = ChapterInteractor(ChapterRepository())
 
     init {
         val repository = ChapterRepository()
         repository.getCoverCards().observe(lifecycleOwner, Observer<List<CoverCard>> {newItems ->
+            currentActionMode?.finish()
             items = newItems.reversed()
+            notifyDataSetChanged()
             filteredItems.postValue(items)
         })
         filteredItems.observe(lifecycleOwner, Observer<List<CoverCard>> { newItems ->
@@ -95,6 +99,15 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickLis
                     }
                     mode?.finish()
                 }
+                R.id.menu_edit -> {
+                    when {
+                        selectedChapters.size > 1 -> App.instance.toast("Выберите только один раздел для редактирования")
+                        selectedChapters.size < 1 -> App.instance.toast("Выберите раздел для редактирования")
+                        else -> {
+                            coverEditor.editChapter(selectedChapters[0].diaryChapter!!)
+                        }
+                    }
+                }
                 else -> return false
             }
             return true
@@ -120,11 +133,12 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickLis
         override fun onDestroyActionMode(mode: ActionMode?) {
             currentActionMode = null
             selectedChapters.clear()
-            for(view in selectedViews) {
-                view.ivMaskSelected.visibility = GONE
-                view.ivMaskSelectedDone.visibility = GONE
+            for(viewHolder in selectedViewHolders) {
+                viewHolder.ivMaskSelected.visibility = GONE
+                viewHolder.ivMaskSelectedDone.visibility = GONE
+                viewHolder.view.isSelected = false
             }
-            selectedViews.clear()
+            selectedViewHolders.clear()
         }
     }
 
@@ -179,7 +193,7 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickLis
         viewWithActionBar = null
     }
 
-    inner class CoverViewHolder(view: View): RecyclerView.ViewHolder(view) {
+    inner class CoverViewHolder(val view: View): RecyclerView.ViewHolder(view) {
         val tvName = view.tvName!!
         val tvPageNum = view.tvPageNum!!
         val ivCover = view.ivCover!!
@@ -215,13 +229,13 @@ class CoverRecyclerAdapter(lifecycleOwner: LifecycleOwner, val onChapterClickLis
             viewWithActionBar?.let {
                 if(!view.isSelected) {
                     selectedChapters.add(filteredItems.value!![layoutPosition])
-                    selectedViews.add(this)
+                    selectedViewHolders.add(this)
                     ivMaskSelected.visibility = VISIBLE
                     ivMaskSelectedDone.visibility = VISIBLE
                 }
                 else {
                     selectedChapters.remove(filteredItems.value!![layoutPosition])
-                    selectedViews.remove(this)
+                    selectedViewHolders.remove(this)
                     ivMaskSelected.visibility = GONE
                     ivMaskSelectedDone.visibility = GONE
                 }

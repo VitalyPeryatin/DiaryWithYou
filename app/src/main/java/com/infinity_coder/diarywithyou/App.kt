@@ -3,6 +3,7 @@ package com.infinity_coder.diarywithyou
 import android.app.Application
 import android.os.Environment
 import androidx.room.Room
+import androidx.room.migration.Migration
 import com.infinity_coder.diarywithyou.data.DiaryDao
 import com.infinity_coder.diarywithyou.data.db.DiaryDatabase
 import com.infinity_coder.diarywithyou.presentation.DIARY_DB_NAME
@@ -13,7 +14,7 @@ class App: Application() {
         super.onCreate()
         instance = this
         val db = Room.databaseBuilder(this, DiaryDatabase::class.java, DIARY_DB_NAME)
-            .fallbackToDestructiveMigration()
+            .addMigrations(DiaryDatabase.MIGRATION_1_2)
             .build()
         diaryDao = db.diaryDao()
     }

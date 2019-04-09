@@ -1,35 +1,39 @@
 package com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
+import com.infinity_coder.diarywithyou.App
 import com.infinity_coder.diarywithyou.R
+import com.infinity_coder.diarywithyou.presentation.*
 import com.infinity_coder.diarywithyou.presentation.camera.CameraActivity
 import com.infinity_coder.diarywithyou.presentation.main.MainActivity
 import com.infinity_coder.diarywithyou.presentation.main.Searchable
-import kotlinx.android.synthetic.main.fragment_diary.*
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.core.content.FileProvider
-import com.infinity_coder.diarywithyou.App
-import com.infinity_coder.diarywithyou.presentation.CAMERA_REQUEST_CODE
-import com.infinity_coder.diarywithyou.presentation.CHAPTER_KEY
-import com.infinity_coder.diarywithyou.presentation.EXTERNAL_STORAGE_PERMISSION_CODE
 import com.infinity_coder.diarywithyou.presentation.main.chapter_pages.view.recycler.PagesRecyclerAdapter
 import com.infinity_coder.diarywithyou.utils.PdfCreator
-import kotlinx.coroutines.*
+import kotlinx.android.synthetic.main.fragment_diary.*
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import java.io.File
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 class PagesFragment: Fragment(), Searchable {
@@ -58,8 +62,12 @@ class PagesFragment: Fragment(), Searchable {
         recyclerPages.adapter = adapter
 
         fabCamera.setOnClickListener {
-            (activity as MainActivity).closeSearchView()
-            startActivityForResult(Intent(context, CameraActivity::class.java), CAMERA_REQUEST_CODE)
+            if(hasCameraPermissions()) {
+                (activity as MainActivity).closeSearchView()
+                startActivityForResult(Intent(context, CameraActivity::class.java), CAMERA_REQUEST_CODE)
+            }else{
+                requestPermissions(cameraPermissions, CAMERA_PERMISSION_CODE)
+            }
         }
     }
 
@@ -87,7 +95,7 @@ class PagesFragment: Fragment(), Searchable {
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             try {
                 startActivity(intent)
-            } catch (e: ActivityNotFoundException) {
+            } catch (e: Throwable) {
                 Toast.makeText(
                     context,
                     "${resources.getString(R.string.no_app_to_open_pdf)}$pdfPath", Toast.LENGTH_SHORT
@@ -102,15 +110,38 @@ class PagesFragment: Fragment(), Searchable {
         (activity as MainActivity).activeFragment = this
     }
 
+    private val cameraPermissions = arrayOf(Manifest.permission.CAMERA)
+
+    private fun hasCameraPermissions(): Boolean = activity!!.isPermissionsGranted(cameraPermissions)
+
     /**
      * Проеряет разрешение для досутпа к внешним файлам, при положительном ответе создаёт во
      * внешней директории pdf-файл
+     *
+     * Также проверяет разрешение на камеру, при положительном ответе открывает камеру
      */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if(requestCode == EXTERNAL_STORAGE_PERMISSION_CODE) {
             if(grantResults.size == 2 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
                 openPdf()
         }
+        else if(requestCode == CAMERA_PERMISSION_CODE){
+            if(grantResults.size == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                fabCamera.performClick()
+            }
+            else {
+                showRationale(R.string.permission_camera_rationale)
+            }
+        }
+    }
+
+    private fun showRationale(@StringRes stringId: Int){
+        val snackBar = Snackbar.make(rootLayout, stringId, Snackbar.LENGTH_LONG)
+        snackBar.setAction(R.string.settings) {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", activity?.packageName, null))
+            startActivity(intent)
+            snackBar.dismiss()
+        }.show()
     }
 
     /**
@@ -131,7 +162,7 @@ class PagesFragment: Fragment(), Searchable {
     }
 
     /**
-     * Ищест страницы по дате, введённой в виде строки
+     * Ищет страницы по дате, введённой в виде строки
      */
     override fun searchByDate(text: String) {
         adapter.filter(text)
